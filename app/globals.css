@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* ── 디자인 토큰 ──────────────────────────────────── */
+@theme {
+  --color-paper: #faf9f6;
+  --color-paper-2: #ffffff;
+  --color-ink: #16161a;
+  --color-ink-soft: #3f3f46;
+  --color-muted: #71717a;
+  --color-line: #e7e4dd;
+  --color-accent: #1f4fd8;
+  --color-accent-soft: #eaf0ff;
+  --color-ai: #6d28d9;
+  --color-ai-soft: #f1ebfb;
+  --color-invest: #0f7a52;
+  --color-invest-soft: #e7f5ee;
+  --color-crypto: #c2410c;
+  --color-crypto-soft: #fdeede;
+
+  --font-serif: "Noto Serif KR", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #131316;
+    --color-paper-2: #1b1b20;
+    --color-ink: #f4f4f5;
+    --color-ink-soft: #d4d4d8;
+    --color-muted: #a1a1aa;
+    --color-line: #2a2a30;
+    --color-accent: #7da2ff;
+    --color-accent-soft: #1c2540;
+    --color-ai-soft: #241b3a;
+    --color-invest-soft: #11271d;
+    --color-crypto-soft: #2c1a0e;
+  }
+}
+
+/* ── 기본 스타일 ──────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* 헤드라인 링크 underline 연출 */
+.headline-link {
+  background-image: linear-gradient(var(--color-ink), var(--color-ink));
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.3s ease;
+}
+.headline-link:hover {
+  background-size: 100% 1.5px;
+}
+
+/* 광고 슬롯 자리표시 점선 박스 (광고 미설정 시 표시) */
+.ad-placeholder {
+  border: 1px dashed var(--color-line);
+  color: var(--color-muted);
+}
+
+/* 가독성 좋은 컨테이너 */
+.container-page {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
