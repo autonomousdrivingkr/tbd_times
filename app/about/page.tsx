@@ -61,6 +61,48 @@ export default function AboutPage() {
         </div>
       </div>
 
+      <h2 className="mt-10 font-serif text-2xl font-bold">편집 원칙</h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        TBD Times는 독자가 매일 아침 가장 적은 시간으로 가장 중요한 흐름을 파악하도록 돕는 것을
+        목표로 합니다. 이를 위해 다음 원칙을 지킵니다.
+      </p>
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-soft">
+        <li>
+          <strong className="text-ink">출처 우선</strong> — 모든 항목은 원문 매체로 연결되며,
+          저작권은 원 매체에 있습니다.
+        </li>
+        <li>
+          <strong className="text-ink">요약과 링크</strong> — 기사 전문을 복제하지 않고 제목·요약·
+          링크만 제공합니다.
+        </li>
+        <li>
+          <strong className="text-ink">투명한 자동화</strong> — 수집과 번역은 자동화되어 있으며,
+          자동 번역의 한계를 분명히 밝힙니다.
+        </li>
+        <li>
+          <strong className="text-ink">중립성</strong> — 특정 종목·자산에 대한 투자 권유를 하지
+          않습니다.
+        </li>
+      </ul>
+
+      <h2 className="mt-10 font-serif text-2xl font-bold">콘텐츠 수집·선별 방법</h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        뉴스는 각 매체가 공개한 RSS/Atom 피드를 통해 수집합니다. 수집된 항목은 중복 제거와 시간순
+        정렬을 거쳐 분야(AI·투자·코인)와 키워드 토픽으로 분류됩니다. 안정적으로 피드를 제공하고 분야
+        적합성이 높은 매체를 우선 큐레이션하며, 피드 품질에 따라 매체 목록은 주기적으로 조정됩니다.
+        해외 영어 기사의 제목·요약은 생성형 AI로 한국어 번역하며, 자동 번역의 특성상 정확한 내용은
+        원문 확인을 권장합니다.
+      </p>
+
+      <h2 className="mt-10 font-serif text-2xl font-bold">정정·삭제 요청</h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        표시된 제목이나 요약에 오류가 있거나 저작권자께서 게시 중단을 원하시는 경우,{" "}
+        <a className="text-accent underline" href="/contact">
+          문의 페이지
+        </a>
+        를 통해 알려 주시면 신속히 확인하여 정정 또는 삭제하겠습니다.
+      </p>
+
       <h2 className="mt-10 font-serif text-2xl font-bold">면책 조항</h2>
       <p className="mt-3 text-sm leading-relaxed text-muted">
         본 사이트의 모든 콘텐츠는 정보 제공을 목적으로 하며, 어떠한 투자 권유나 자문도 아닙니다.

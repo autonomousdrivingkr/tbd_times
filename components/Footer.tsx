@@ -18,6 +18,9 @@ export default function Footer() {
             <Link href="/investment" className="text-ink-soft hover:text-accent">투자 뉴스</Link>
             <Link href="/crypto" className="text-ink-soft hover:text-accent">코인 뉴스</Link>
             <Link href="/about" className="text-ink-soft hover:text-accent">소개</Link>
+            <Link href="/faq" className="text-ink-soft hover:text-accent">자주 묻는 질문</Link>
+            <Link href="/contact" className="text-ink-soft hover:text-accent">문의</Link>
+            <Link href="/terms" className="text-ink-soft hover:text-accent">이용약관</Link>
             <Link href="/privacy" className="text-ink-soft hover:text-accent">개인정보 처리방침</Link>
           </nav>
         </div>

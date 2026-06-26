@@ -1,7 +1,13 @@
 import { getNews } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
 import { resolveImages } from "@/lib/images";
-import { CATEGORY_LABELS, CATEGORY_DESC, CATEGORY_ACCENT, type Category } from "@/lib/sources";
+import {
+  CATEGORY_LABELS,
+  CATEGORY_DESC,
+  CATEGORY_INTRO,
+  CATEGORY_ACCENT,
+  type Category,
+} from "@/lib/sources";
 import { updatedAtLabel } from "@/lib/format";
 import NewsFeed from "@/components/NewsFeed";
 
@@ -21,6 +27,9 @@ export default async function CategoryView({ category }: { category: Category })
         </div>
         <p className="mt-2 text-sm text-muted">
           {CATEGORY_DESC[category]} · 마지막 업데이트 {updatedAtLabel()}
+        </p>
+        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-ink-soft">
+          {CATEGORY_INTRO[category]}
         </p>
       </header>
 
