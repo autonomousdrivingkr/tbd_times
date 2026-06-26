@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getNews } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
+import { resolveImages } from "@/lib/images";
 import { searchNews, TOPICS } from "@/lib/topics";
 import NewsCard from "@/components/NewsCard";
 import AdSlot from "@/components/AdSlot";
@@ -22,7 +23,7 @@ export default async function SearchPage({
 
   const all = query ? await getNews() : [];
   const matched = query ? searchNews(all, query).slice(0, 36) : [];
-  const items = await translateItems(matched);
+  const items = await resolveImages(await translateItems(matched));
 
   return (
     <div className="container-page py-8">

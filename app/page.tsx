@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getNews, type NewsItem } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
+import { resolveImages } from "@/lib/images";
 import { updatedAtLabel } from "@/lib/format";
 import { TOPICS } from "@/lib/topics";
 import NewsCard from "@/components/NewsCard";
@@ -23,7 +24,7 @@ export default async function HomePage() {
     Boolean
   ) as NewsItem[];
   const unique = Array.from(new Map(displayed.map((i) => [i.link, i])).values());
-  const translated = await translateItems(unique);
+  const translated = await resolveImages(await translateItems(unique));
   const tmap = new Map(translated.map((i) => [i.link, i]));
   const t = (item?: NewsItem) => (item ? tmap.get(item.link) ?? item : undefined);
   const tl = (arr: NewsItem[]) => arr.map((i) => tmap.get(i.link) ?? i);

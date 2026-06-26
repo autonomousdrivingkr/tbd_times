@@ -1,5 +1,6 @@
 import { getNews } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
+import { resolveImages } from "@/lib/images";
 import { CATEGORY_LABELS, CATEGORY_DESC, CATEGORY_ACCENT, type Category } from "@/lib/sources";
 import { updatedAtLabel } from "@/lib/format";
 import NewsFeed from "@/components/NewsFeed";
@@ -7,7 +8,7 @@ import NewsFeed from "@/components/NewsFeed";
 export default async function CategoryView({ category }: { category: Category }) {
   // 한 페이지에 너무 많은 기사/광고가 쌓이지 않도록 상한을 둔다.
   const raw = (await getNews(category)).slice(0, 45);
-  const items = await translateItems(raw);
+  const items = await resolveImages(await translateItems(raw));
 
   return (
     <div className="container-page py-8">

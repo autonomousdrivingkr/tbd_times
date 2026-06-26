@@ -26,10 +26,15 @@ export default function Thumb({
     );
   }
 
+  // http(혼합콘텐츠) 이미지는 서버 프록시로 우회한다. https 는 직접 로드.
+  const display = src.startsWith("http://")
+    ? `/api/img?url=${encodeURIComponent(src)}`
+    : src;
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={display}
       alt={alt}
       loading="lazy"
       decoding="async"

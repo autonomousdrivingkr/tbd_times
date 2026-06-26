@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getNews } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
+import { resolveImages } from "@/lib/images";
 import { TOPICS, getTopic, filterByTopic } from "@/lib/topics";
 import { updatedAtLabel } from "@/lib/format";
 import NewsFeed from "@/components/NewsFeed";
@@ -37,7 +38,7 @@ export default async function TopicPage({
 
   const all = await getNews();
   const filtered = filterByTopic(all, topic).slice(0, 45);
-  const items = await translateItems(filtered);
+  const items = await resolveImages(await translateItems(filtered));
 
   return (
     <div className="container-page py-8">
