@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/investment`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/crypto`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${base}/glossary`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${base}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
