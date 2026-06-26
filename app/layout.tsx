@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import AdSenseScript from "@/components/AdSenseScript";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
@@ -44,9 +43,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;800&display=swap"
           rel="stylesheet"
         />
+        {/* Google AdSense 사이트 확인 + 광고 로더 (퍼블리셔 ID 설정 시에만 삽입) */}
+        {adsenseClient && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
+            crossOrigin="anonymous"
+          />
+        )}
       </head>
       <body className="min-h-screen flex flex-col">
-        <AdSenseScript />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
