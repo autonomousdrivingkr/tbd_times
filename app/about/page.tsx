@@ -66,6 +66,14 @@ export default function AboutPage() {
         본 사이트의 모든 콘텐츠는 정보 제공을 목적으로 하며, 어떠한 투자 권유나 자문도 아닙니다.
         투자 판단과 그 결과에 대한 책임은 이용자 본인에게 있습니다.
       </p>
+
+      <h2 className="mt-10 font-serif text-2xl font-bold">문의</h2>
+      <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+        제휴·제보·콘텐츠 관련 문의는 이메일로 연락해 주세요.{" "}
+        <a className="text-accent underline" href="mailto:dr.derek.ji@gmail.com">
+          dr.derek.ji@gmail.com
+        </a>
+      </p>
     </div>
   );
 }

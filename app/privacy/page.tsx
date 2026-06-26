@@ -79,7 +79,10 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-serif text-xl font-bold text-ink">5. 문의</h2>
           <p className="mt-2">
-            개인정보 처리방침에 대한 문의는 사이트 운영자에게 연락해 주시기 바랍니다.
+            개인정보 처리방침에 대한 문의는 이메일로 연락해 주시기 바랍니다.{" "}
+            <a className="text-accent underline" href="mailto:dr.derek.ji@gmail.com">
+              dr.derek.ji@gmail.com
+            </a>
           </p>
         </section>
       </div>

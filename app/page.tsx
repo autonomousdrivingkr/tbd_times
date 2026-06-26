@@ -73,6 +73,17 @@ export default async function HomePage() {
                 <NewsCard key={item.link} item={item} variant="compact" />
               ))}
             </div>
+
+            {/* 사이드바 광고 */}
+            <div className="mt-8">
+              <p className="mb-1 text-[10px] uppercase tracking-widest text-muted">
+                Advertisement
+              </p>
+              <AdSlot
+                slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR}
+                className="sticky top-24"
+              />
+            </div>
           </aside>
         </section>
       )}
