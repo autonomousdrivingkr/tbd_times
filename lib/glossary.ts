@@ -1,5 +1,3 @@
-import type { Category } from "./sources";
-
 // AI·투자·코인 핵심 용어 해설 (자체 작성 원본 콘텐츠).
 // 뉴스를 읽을 때 자주 등장하는 개념을 간결·정확하게 정리한다.
 
@@ -9,7 +7,7 @@ export interface Term {
   def: string;
 }
 
-export const GLOSSARY: Record<Category, Term[]> = {
+export const GLOSSARY: Record<string, Term[]> = {
   ai: [
     {
       term: "생성형 AI",
@@ -197,3 +195,16 @@ export const GLOSSARY: Record<Category, Term[]> = {
     },
   ],
 };
+
+// 용어사전 표시용 그룹 메타 (GLOSSARY 키 순서대로 렌더)
+export interface GlossaryGroup {
+  key: string;
+  label: string;
+  accent: string;
+}
+
+export const GLOSSARY_GROUPS: GlossaryGroup[] = [
+  { key: "ai", label: "AI", accent: "var(--color-ai)" },
+  { key: "investment", label: "투자·금융", accent: "var(--color-invest)" },
+  { key: "crypto", label: "코인·가상자산", accent: "var(--color-crypto)" },
+];

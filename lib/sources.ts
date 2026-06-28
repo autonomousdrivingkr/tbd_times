@@ -2,7 +2,7 @@
 // 안정적으로 RSS/Atom 피드를 제공하는 매체 위주로 큐레이션했다 (생존 테스트 통과 피드만).
 // 일부 피드는 시간이 지나며 변경될 수 있으므로 수집 단계에서 개별 실패를 허용한다.
 
-export type Category = "ai" | "investment" | "crypto";
+export type Category = "ai" | "investment" | "travel";
 
 export interface Source {
   /** 화면에 표시할 매체명 */
@@ -41,41 +41,49 @@ export const SOURCES: Source[] = [
   { name: "연합뉴스 경제", url: "https://www.yna.co.kr/rss/economy.xml", category: "investment", ko: true },
   { name: "매일경제 증권", url: "https://www.mk.co.kr/rss/50200011/", category: "investment", ko: true },
   { name: "인포스탁데일리", url: "https://www.infostockdaily.co.kr/rss/allArticle.xml", category: "investment", ko: true },
+  // ── 투자 / 금융 (코인·가상자산 통합) ──────────────────
+  // 코인·비트코인은 투자 섹션에서 함께 관리한다.
+  { name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/", category: "investment" },
+  { name: "Cointelegraph", url: "https://cointelegraph.com/rss", category: "investment" },
+  { name: "Decrypt", url: "https://decrypt.co/feed", category: "investment" },
+  { name: "The Block", url: "https://www.theblock.co/rss.xml", category: "investment" },
+  { name: "토큰포스트", url: "https://www.tokenpost.kr/rss", category: "investment", ko: true },
+  { name: "블록미디어", url: "https://www.blockmedia.co.kr/feed", category: "investment", ko: true },
 
-  // ── 코인 / 가상자산 ───────────────────────────────────
-  { name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/", category: "crypto" },
-  { name: "Cointelegraph", url: "https://cointelegraph.com/rss", category: "crypto" },
-  { name: "Decrypt", url: "https://decrypt.co/feed", category: "crypto" },
-  { name: "The Block", url: "https://www.theblock.co/rss.xml", category: "crypto" },
-  { name: "토큰포스트", url: "https://www.tokenpost.kr/rss", category: "crypto", ko: true },
-  { name: "블록미디어", url: "https://www.blockmedia.co.kr/feed", category: "crypto", ko: true },
+  // ── 여행 / 레저 (국내) ────────────────────────────────
+  { name: "여행신문", url: "https://www.traveltimes.co.kr/rss/allArticle.xml", category: "travel", ko: true },
+  { name: "트래비", url: "https://www.travie.com/rss/allArticle.xml", category: "travel", ko: true },
+  { name: "동아일보 여행", url: "https://rss.donga.com/travel.xml", category: "travel", ko: true },
+  // ── 여행 / 레저 (해외) ────────────────────────────────
+  { name: "Condé Nast Traveler", url: "https://www.cntraveler.com/feed/rss", category: "travel" },
+  { name: "Skift", url: "https://skift.com/feed/", category: "travel" },
 ];
 
-export const CATEGORIES: Category[] = ["ai", "investment", "crypto"];
+export const CATEGORIES: Category[] = ["ai", "investment", "travel"];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   ai: "AI",
   investment: "투자",
-  crypto: "코인",
+  travel: "여행",
 };
 
 export const CATEGORY_DESC: Record<Category, string> = {
-  ai: "전세계 인공지능·빅테크·반도체 동향",
-  investment: "글로벌 증시·금융·투자 소식",
-  crypto: "비트코인·블록체인·가상자산 뉴스",
+  ai: "전세계 인공지능·AI 연구·모델 동향",
+  investment: "글로벌 증시·금리·코인 등 금융 소식",
+  travel: "국내외 여행지·항공·레저 소식",
 };
 
 // 각 카테고리 상단에 표시할 자체 작성 소개 문단(원본 콘텐츠).
 export const CATEGORY_INTRO: Record<Category, string> = {
   ai: "인공지능은 이제 기술을 넘어 산업과 일상을 바꾸는 핵심 동력이 되었습니다. Tibedra의 AI 섹션은 글로벌 빅테크의 모델 경쟁과 반도체·인프라 투자, 그리고 국내 AI 산업 동향까지 매일 주요 소식을 모아 정리합니다. 각 기사는 제목과 요약, 원문 링크로 제공되며 해외 기사는 한국어로 자동 번역됩니다.",
   investment:
-    "금리와 환율, 기업 실적과 빅테크 주가까지 — 투자 환경은 매일 빠르게 움직입니다. Tibedra의 투자 섹션은 미국과 한국을 비롯한 글로벌 증시·금융·경제 뉴스를 한곳에 모아, 시장의 큰 흐름을 아침에 빠르게 파악하도록 돕습니다. 모든 콘텐츠는 정보 제공 목적이며 투자 권유가 아닙니다.",
-  crypto:
-    "비트코인과 이더리움을 비롯한 가상자산 시장은 24시간 쉬지 않고 움직입니다. Tibedra의 코인 섹션은 주요 코인 시세 이슈와 블록체인 기술, 규제·제도 변화 등 가상자산 생태계의 핵심 소식을 매일 정리해 전합니다. 투자 결정 전에는 반드시 원문과 공식 자료를 확인하세요.",
+    "금리와 환율, 기업 실적부터 가상자산까지 — 투자 환경은 매일 빠르게 움직입니다. Tibedra의 투자 섹션은 미국과 한국의 증시·금융·경제는 물론 연준 금리, 비트코인·이더리움 등 코인 시장 소식까지 한곳에 모읍니다. 모든 콘텐츠는 정보 제공 목적이며 투자 권유가 아닙니다.",
+  travel:
+    "여행은 다시 일상이 되었습니다. Tibedra의 여행 섹션은 국내외 여행지와 항공·호텔, 레저 트렌드 소식을 매일 모아 전합니다. 국내 매체 기사와 함께 해외 매체의 기사는 한국어로 자동 번역해 제공하니, 다음 여행 계획에 참고하세요.",
 };
 
 export const CATEGORY_ACCENT: Record<Category, string> = {
   ai: "var(--color-ai)",
   investment: "var(--color-invest)",
-  crypto: "var(--color-crypto)",
+  travel: "var(--color-travel)",
 };

@@ -30,7 +30,7 @@ async function handle(req: NextRequest) {
   }
 
   revalidateTag("news");
-  const paths = ["/", "/ai", "/investment", "/crypto", ...TOPICS.map((t) => `/topic/${t.slug}`)];
+  const paths = ["/", "/ai", "/investment", "/travel", ...TOPICS.map((t) => `/topic/${t.slug}`)];
   for (const path of paths) {
     revalidatePath(path);
   }

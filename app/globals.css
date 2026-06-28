@@ -16,6 +16,8 @@
   --color-invest-soft: #e7f5ee;
   --color-crypto: #c2410c;
   --color-crypto-soft: #fdeede;
+  --color-travel: #0369a1;
+  --color-travel-soft: #e0f2fe;
 
   --font-serif: "Noto Serif KR", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -34,6 +36,7 @@
     --color-ai-soft: #241b3a;
     --color-invest-soft: #11271d;
     --color-crypto-soft: #2c1a0e;
+    --color-travel-soft: #0c2233;
   }
 }
 

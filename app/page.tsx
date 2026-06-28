@@ -1,9 +1,11 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { getNews, type NewsItem } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
 import { resolveImages } from "@/lib/images";
 import { updatedAtLabel } from "@/lib/format";
-import { TOPICS } from "@/lib/topics";
+import { TOPICS, getTopic, filterByTopic } from "@/lib/topics";
+import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS } from "@/lib/sections";
 import NewsCard from "@/components/NewsCard";
 import SectionHeading from "@/components/SectionHeading";
 import AdSlot from "@/components/AdSlot";
@@ -11,29 +13,43 @@ import AdSlot from "@/components/AdSlot";
 // 30분마다 정적 페이지를 재생성(ISR). 아침 Cron 이 강제 무효화도 한다.
 export const revalidate = 1800;
 
+const SECONDARY_TOPICS = TOPICS.filter((t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug));
+
 export default async function HomePage() {
   const all = await getNews();
-  const aiRaw = all.filter((n) => n.category === "ai").slice(0, 6);
-  const investRaw = all.filter((n) => n.category === "investment").slice(0, 6);
-  const cryptoRaw = all.filter((n) => n.category === "crypto").slice(0, 6);
+
+  // 상단 섹션별 상위 항목 선별 (카테고리 또는 키워드 토픽)
+  const sections = NAV_SECTIONS.map((s) => {
+    let items: NewsItem[];
+    if (s.kind === "category") {
+      items = all.filter((n) => n.category === s.key);
+    } else {
+      const topic = getTopic(s.key);
+      items = topic ? filterByTopic(all, topic) : [];
+    }
+    return { ...s, items: items.slice(0, 6) };
+  });
+
   const leadRaw = all[0];
   const sidebarRaw = all.slice(1, 6);
 
-  // 표시할 항목만 중복 없이 모아 한 번에 번역
-  const displayed = [leadRaw, ...sidebarRaw, ...aiRaw, ...investRaw, ...cryptoRaw].filter(
+  // 표시할 항목만 중복 없이 모아 한 번에 번역 + 이미지 보강
+  const displayed = [leadRaw, ...sidebarRaw, ...sections.flatMap((s) => s.items)].filter(
     Boolean
   ) as NewsItem[];
   const unique = Array.from(new Map(displayed.map((i) => [i.link, i])).values());
-  const translated = await resolveImages(await translateItems(unique));
-  const tmap = new Map(translated.map((i) => [i.link, i]));
-  const t = (item?: NewsItem) => (item ? tmap.get(item.link) ?? item : undefined);
-  const tl = (arr: NewsItem[]) => arr.map((i) => tmap.get(i.link) ?? i);
+  const prepared = await resolveImages(await translateItems(unique));
+  const pmap = new Map(prepared.map((i) => [i.link, i]));
+  const t = (item?: NewsItem) => (item ? pmap.get(item.link) ?? item : undefined);
+  const tl = (arr: NewsItem[]) => arr.map((i) => pmap.get(i.link) ?? i);
 
   const lead = t(leadRaw);
   const sidebar = tl(sidebarRaw);
-  const ai = tl(aiRaw);
-  const investment = tl(investRaw);
-  const crypto = tl(cryptoRaw);
+
+  const inlineAds = [
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE,
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_FEED,
+  ];
 
   return (
     <div className="container-page py-8">
@@ -46,18 +62,20 @@ export default async function HomePage() {
         </p>
       </div>
 
-      {/* 토픽 칩 */}
-      <div className="mb-8 flex flex-wrap gap-2">
-        {TOPICS.map((topic) => (
-          <Link
-            key={topic.slug}
-            href={`/topic/${topic.slug}`}
-            className="rounded-full border border-line bg-paper-2 px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-accent hover:text-accent"
-          >
-            {topic.emoji} {topic.label}
-          </Link>
-        ))}
-      </div>
+      {/* 보조 토픽 칩 */}
+      {SECONDARY_TOPICS.length > 0 && (
+        <div className="mb-8 flex flex-wrap gap-2">
+          {SECONDARY_TOPICS.map((topic) => (
+            <Link
+              key={topic.slug}
+              href={`/topic/${topic.slug}`}
+              className="rounded-full border border-line bg-paper-2 px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-accent hover:text-accent"
+            >
+              {topic.emoji} {topic.label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* 톱스토리 */}
       {lead && (
@@ -89,38 +107,20 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 인라인 광고 1 */}
-      <AdRow slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE} />
-
-      {/* AI 섹션 */}
-      <Section
-        title="AI · 인공지능"
-        subtitle="전세계 빅테크·반도체·AI 연구 동향"
-        href="/ai"
-        accent="var(--color-ai)"
-        items={ai}
-      />
-
-      {/* 인라인 광고 2 */}
-      <AdRow slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_FEED} />
-
-      {/* 투자 섹션 */}
-      <Section
-        title="투자 · 금융"
-        subtitle="글로벌 증시·시장 소식"
-        href="/investment"
-        accent="var(--color-invest)"
-        items={investment}
-      />
-
-      {/* 코인 섹션 */}
-      <Section
-        title="코인 · 가상자산"
-        subtitle="비트코인·블록체인 동향"
-        href="/crypto"
-        accent="var(--color-crypto)"
-        items={crypto}
-      />
+      {/* 섹션들 (AI · 반도체 · 투자 · 빅테크 · 여행) */}
+      {sections.map((section, idx) => (
+        <Fragment key={section.key}>
+          <Section
+            title={section.label}
+            subtitle={section.subtitle}
+            href={section.href}
+            accent={section.accent}
+            items={tl(section.items)}
+          />
+          {idx === 0 && <AdRow slot={inlineAds[0]} />}
+          {idx === 2 && <AdRow slot={inlineAds[1]} />}
+        </Fragment>
+      ))}
 
       {all.length === 0 && (
         <p className="py-20 text-center text-muted">

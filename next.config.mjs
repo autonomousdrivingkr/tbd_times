@@ -6,6 +6,12 @@ const nextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  async redirects() {
+    return [
+      // 코인 섹션을 투자에 통합 — 기존 /crypto 링크 보존
+      { source: "/crypto", destination: "/investment", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

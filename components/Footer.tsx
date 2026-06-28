@@ -9,14 +9,16 @@ export default function Footer() {
           <div className="max-w-sm">
             <p className="font-serif text-xl font-bold">Tibedra</p>
             <p className="mt-2 text-sm text-muted">
-              전세계 AI·투자 뉴스를 매일 아침 자동으로 모아 정리합니다. 모든 기사는
+              AI·반도체·투자·빅테크·여행 소식을 매일 아침 모아 정리합니다. 모든 기사는
               요약과 함께 원문 출처로 연결됩니다.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <Link href="/ai" className="text-ink-soft hover:text-accent">AI 뉴스</Link>
-            <Link href="/investment" className="text-ink-soft hover:text-accent">투자 뉴스</Link>
-            <Link href="/crypto" className="text-ink-soft hover:text-accent">코인 뉴스</Link>
+            <Link href="/ai" className="text-ink-soft hover:text-accent">AI</Link>
+            <Link href="/topic/semiconductor" className="text-ink-soft hover:text-accent">반도체</Link>
+            <Link href="/investment" className="text-ink-soft hover:text-accent">투자</Link>
+            <Link href="/topic/bigtech" className="text-ink-soft hover:text-accent">빅테크</Link>
+            <Link href="/travel" className="text-ink-soft hover:text-accent">여행</Link>
             <Link href="/about" className="text-ink-soft hover:text-accent">소개</Link>
             <Link href="/glossary" className="text-ink-soft hover:text-accent">용어사전</Link>
             <Link href="/faq" className="text-ink-soft hover:text-accent">자주 묻는 질문</Link>

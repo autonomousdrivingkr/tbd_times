@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { GLOSSARY } from "@/lib/glossary";
-import { CATEGORIES, CATEGORY_LABELS, CATEGORY_ACCENT } from "@/lib/sources";
+import { GLOSSARY, GLOSSARY_GROUPS } from "@/lib/glossary";
 
 export const metadata: Metadata = {
   title: "용어사전",
@@ -17,8 +16,8 @@ const glossaryJsonLd = {
   description: "AI·투자·코인 뉴스 이해에 필요한 핵심 용어 해설",
   url: `${siteUrl}/glossary`,
   inLanguage: "ko-KR",
-  hasDefinedTerm: CATEGORIES.flatMap((cat) =>
-    GLOSSARY[cat].map((t) => ({
+  hasDefinedTerm: GLOSSARY_GROUPS.flatMap((g) =>
+    (GLOSSARY[g.key] ?? []).map((t) => ({
       "@type": "DefinedTerm",
       name: t.term,
       description: t.def,
@@ -42,28 +41,25 @@ export default function GlossaryPage() {
 
       {/* 분야 바로가기 */}
       <nav className="mt-6 flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
+        {GLOSSARY_GROUPS.map((g) => (
           <a
-            key={cat}
-            href={`#${cat}`}
+            key={g.key}
+            href={`#${g.key}`}
             className="rounded-full border border-line bg-paper-2 px-4 py-1.5 text-sm font-medium text-ink-soft hover:border-accent hover:text-accent"
           >
-            {CATEGORY_LABELS[cat]} 용어
+            {g.label} 용어
           </a>
         ))}
       </nav>
 
-      {CATEGORIES.map((cat) => (
-        <section key={cat} id={cat} className="mt-12 scroll-mt-24">
+      {GLOSSARY_GROUPS.map((g) => (
+        <section key={g.key} id={g.key} className="mt-12 scroll-mt-24">
           <h2 className="flex items-center gap-2 font-serif text-2xl font-bold">
-            <span
-              className="h-6 w-1.5 rounded-full"
-              style={{ background: CATEGORY_ACCENT[cat] }}
-            />
-            {CATEGORY_LABELS[cat]} 용어
+            <span className="h-6 w-1.5 rounded-full" style={{ background: g.accent }} />
+            {g.label} 용어
           </h2>
           <dl className="mt-5 divide-y divide-line">
-            {GLOSSARY[cat].map((t) => (
+            {(GLOSSARY[g.key] ?? []).map((t) => (
               <div key={t.term} className="py-4">
                 <dt className="flex flex-wrap items-baseline gap-x-2">
                   <span className="font-bold text-ink">{t.term}</span>

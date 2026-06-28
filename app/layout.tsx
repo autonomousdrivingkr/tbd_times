@@ -9,24 +9,24 @@ const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Tibedra — 매일 아침 AI·투자 뉴스 브리핑",
+    default: "Tibedra — AI·테크·투자·여행 데일리 브리핑",
     template: "%s · Tibedra",
   },
   description:
-    "전세계 AI·인공지능과 투자·금융 뉴스를 매일 아침 자동으로 모아 한눈에 보여주는 데일리 브리핑.",
-  keywords: ["AI 뉴스", "인공지능", "투자 뉴스", "증시", "주식", "테크 뉴스", "데일리 브리핑"],
+    "AI·반도체·빅테크와 투자·금융(코인 포함), 그리고 여행까지 — 매일 아침 전세계 핵심 소식을 한국어로 모아 전하는 데일리 브리핑.",
+  keywords: ["AI 뉴스", "반도체", "빅테크", "투자 뉴스", "증시", "코인", "여행", "테크 뉴스", "데일리 브리핑"],
   openGraph: {
     type: "website",
     locale: "ko_KR",
     siteName: "Tibedra",
-    title: "Tibedra — 매일 아침 AI·투자 뉴스 브리핑",
-    description: "전세계 AI·투자 소식을 매일 아침 한눈에.",
+    title: "Tibedra — AI·테크·투자·여행 데일리 브리핑",
+    description: "AI·반도체·투자·빅테크·여행 소식을 매일 아침 한눈에.",
     url: siteUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tibedra — 매일 아침 AI·투자 뉴스 브리핑",
-    description: "전세계 AI·투자 소식을 매일 아침 한눈에.",
+    title: "Tibedra — AI·테크·투자·여행 데일리 브리핑",
+    description: "AI·반도체·투자·빅테크·여행 소식을 매일 아침 한눈에.",
   },
   robots: { index: true, follow: true },
   // AdSense 사이트 소유 확인용 메타 (퍼블리셔 ID 설정 시 자동 삽입)
@@ -42,7 +42,7 @@ const siteJsonLd = {
       name: "Tibedra",
       url: siteUrl,
       description:
-        "전세계 AI·투자·코인 뉴스를 매일 아침 자동으로 모아 전하는 한국어 데일리 뉴스 브리핑.",
+        "AI·반도체·빅테크와 투자·금융, 여행 소식을 매일 아침 모아 전하는 한국어 데일리 브리핑.",
     },
     {
       "@type": "WebSite",

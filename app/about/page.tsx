@@ -3,22 +3,23 @@ import { SOURCES } from "@/lib/sources";
 
 export const metadata: Metadata = {
   title: "소개",
-  description: "Tibedra는 전세계 AI·투자 뉴스를 매일 아침 자동으로 모아 정리하는 데일리 브리핑입니다.",
+  description:
+    "Tibedra는 전세계 AI·반도체·빅테크와 투자·금융(코인 포함), 여행 뉴스를 매일 아침 자동으로 모아 정리하는 데일리 브리핑입니다.",
 };
 
 export default function AboutPage() {
   const ai = SOURCES.filter((s) => s.category === "ai");
   const invest = SOURCES.filter((s) => s.category === "investment");
-  const crypto = SOURCES.filter((s) => s.category === "crypto");
+  const travel = SOURCES.filter((s) => s.category === "travel");
 
   return (
     <div className="container-page max-w-3xl py-12">
       <h1 className="font-serif text-3xl sm:text-4xl font-extrabold">Tibedra 소개</h1>
       <div className="mt-6 space-y-5 text-[15px] leading-relaxed text-ink-soft">
         <p>
-          <strong className="text-ink">Tibedra</strong>는 전세계의 AI·인공지능 소식과 투자·금융
-          뉴스를 매일 아침 자동으로 모아 한 페이지에서 빠르게 훑어볼 수 있도록 정리하는 데일리
-          브리핑 서비스입니다.
+          <strong className="text-ink">Tibedra</strong>는 전세계의 AI·반도체·빅테크 소식과 투자·금융
+          (코인 포함), 그리고 여행 뉴스를 매일 아침 자동으로 모아 한 페이지에서 빠르게 훑어볼 수
+          있도록 정리하는 데일리 브리핑 서비스입니다.
         </p>
         <p>
           각 기사는 신뢰할 수 있는 매체의 공개 RSS 피드에서 <strong className="text-ink">헤드라인과
@@ -44,7 +45,7 @@ export default function AboutPage() {
           </ul>
         </div>
         <div>
-          <h3 className="mb-2 text-sm font-bold text-invest">투자 · 금융</h3>
+          <h3 className="mb-2 text-sm font-bold text-invest">투자 · 금융 · 코인</h3>
           <ul className="space-y-1 text-sm text-ink-soft">
             {invest.map((s) => (
               <li key={s.name}>· {s.name}</li>
@@ -52,9 +53,9 @@ export default function AboutPage() {
           </ul>
         </div>
         <div>
-          <h3 className="mb-2 text-sm font-bold text-crypto">코인 · 가상자산</h3>
+          <h3 className="mb-2 text-sm font-bold text-travel">여행 · 레저</h3>
           <ul className="space-y-1 text-sm text-ink-soft">
-            {crypto.map((s) => (
+            {travel.map((s) => (
               <li key={s.name}>· {s.name}</li>
             ))}
           </ul>
@@ -88,10 +89,10 @@ export default function AboutPage() {
       <h2 className="mt-10 font-serif text-2xl font-bold">콘텐츠 수집·선별 방법</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
         뉴스는 각 매체가 공개한 RSS/Atom 피드를 통해 수집합니다. 수집된 항목은 중복 제거와 시간순
-        정렬을 거쳐 분야(AI·투자·코인)와 키워드 토픽으로 분류됩니다. 안정적으로 피드를 제공하고 분야
-        적합성이 높은 매체를 우선 큐레이션하며, 피드 품질에 따라 매체 목록은 주기적으로 조정됩니다.
-        해외 영어 기사의 제목·요약은 생성형 AI로 한국어 번역하며, 자동 번역의 특성상 정확한 내용은
-        원문 확인을 권장합니다.
+        정렬을 거쳐 분야(AI·투자·여행)와 키워드 섹션(반도체·빅테크 등)으로 분류됩니다. 안정적으로
+        피드를 제공하고 분야 적합성이 높은 매체를 우선 큐레이션하며, 피드 품질에 따라 매체 목록은
+        주기적으로 조정됩니다. 해외 영어 기사의 제목·요약은 생성형 AI로 한국어 번역하며, 자동 번역의
+        특성상 정확한 내용은 원문 확인을 권장합니다.
       </p>
 
       <h2 className="mt-10 font-serif text-2xl font-bold">정정·삭제 요청</h2>

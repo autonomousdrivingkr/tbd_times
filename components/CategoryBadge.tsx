@@ -3,7 +3,7 @@ import { CATEGORY_LABELS, type Category } from "@/lib/sources";
 const STYLES: Record<Category, string> = {
   ai: "bg-ai-soft text-ai",
   investment: "bg-invest-soft text-invest",
-  crypto: "bg-crypto-soft text-crypto",
+  travel: "bg-travel-soft text-travel",
 };
 
 export default function CategoryBadge({ category }: { category: Category }) {
