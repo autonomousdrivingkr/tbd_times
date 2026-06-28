@@ -8,9 +8,31 @@ export const metadata: Metadata = {
     "AI·투자·코인 뉴스를 읽을 때 자주 등장하는 핵심 용어를 쉽고 정확하게 풀이한 용어사전. 거대언어모델, 기준금리, 블록체인 등 36개 용어 정리.",
 };
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+const glossaryJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "DefinedTermSet",
+  name: "TBD Times 용어사전",
+  description: "AI·투자·코인 뉴스 이해에 필요한 핵심 용어 해설",
+  url: `${siteUrl}/glossary`,
+  inLanguage: "ko-KR",
+  hasDefinedTerm: CATEGORIES.flatMap((cat) =>
+    GLOSSARY[cat].map((t) => ({
+      "@type": "DefinedTerm",
+      name: t.term,
+      description: t.def,
+    }))
+  ),
+};
+
 export default function GlossaryPage() {
   return (
     <div className="container-page max-w-3xl py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(glossaryJsonLd) }}
+      />
       <h1 className="font-serif text-3xl sm:text-4xl font-extrabold">용어사전</h1>
       <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
         AI·투자·코인 뉴스를 읽다 보면 낯선 용어가 자주 등장합니다. TBD Times 용어사전은 뉴스를

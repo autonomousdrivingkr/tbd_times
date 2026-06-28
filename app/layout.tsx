@@ -33,6 +33,36 @@ export const metadata: Metadata = {
   other: adsenseClient ? { "google-adsense-account": adsenseClient } : {},
 };
 
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "TBD Times",
+      url: siteUrl,
+      description:
+        "전세계 AI·투자·코인 뉴스를 매일 아침 자동으로 모아 전하는 한국어 데일리 뉴스 브리핑.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "TBD Times",
+      inLanguage: "ko-KR",
+      publisher: { "@id": `${siteUrl}/#organization` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${siteUrl}/search?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
@@ -53,6 +83,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
       </head>
       <body className="min-h-screen flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
