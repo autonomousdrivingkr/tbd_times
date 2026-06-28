@@ -13,7 +13,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const glossaryJsonLd = {
   "@context": "https://schema.org",
   "@type": "DefinedTermSet",
-  name: "TBD Times 용어사전",
+  name: "Tibedra 용어사전",
   description: "AI·투자·코인 뉴스 이해에 필요한 핵심 용어 해설",
   url: `${siteUrl}/glossary`,
   inLanguage: "ko-KR",
@@ -35,7 +35,7 @@ export default function GlossaryPage() {
       />
       <h1 className="font-serif text-3xl sm:text-4xl font-extrabold">용어사전</h1>
       <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
-        AI·투자·코인 뉴스를 읽다 보면 낯선 용어가 자주 등장합니다. TBD Times 용어사전은 뉴스를
+        AI·투자·코인 뉴스를 읽다 보면 낯선 용어가 자주 등장합니다. Tibedra 용어사전은 뉴스를
         이해하는 데 꼭 필요한 핵심 개념을 분야별로 쉽고 간결하게 정리했습니다. 정보 제공을 목적으로
         하며, 투자 판단의 근거로 삼기 전에는 반드시 원문과 공식 자료를 확인하세요.
       </p>

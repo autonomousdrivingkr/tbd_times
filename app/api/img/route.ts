@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB 상한 (악용 방지)
 const UA =
-  "Mozilla/5.0 (compatible; TBDTimesBot/1.0; +https://tbdtimes.vercel.app/about)";
+  "Mozilla/5.0 (compatible; TibedraBot/1.0; +https://tibedra.com/about)";
 
 // SSRF 방지: 내부/사설/링크로컬 대역 차단
 function isBlockedHost(host: string): boolean {

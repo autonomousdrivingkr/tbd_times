@@ -3,7 +3,7 @@ import { SOURCES } from "@/lib/sources";
 
 export const metadata: Metadata = {
   title: "소개",
-  description: "TBD Times 는 전세계 AI·투자 뉴스를 매일 아침 자동으로 모아 정리하는 데일리 브리핑입니다.",
+  description: "Tibedra는 전세계 AI·투자 뉴스를 매일 아침 자동으로 모아 정리하는 데일리 브리핑입니다.",
 };
 
 export default function AboutPage() {
@@ -13,10 +13,10 @@ export default function AboutPage() {
 
   return (
     <div className="container-page max-w-3xl py-12">
-      <h1 className="font-serif text-3xl sm:text-4xl font-extrabold">TBD Times 소개</h1>
+      <h1 className="font-serif text-3xl sm:text-4xl font-extrabold">Tibedra 소개</h1>
       <div className="mt-6 space-y-5 text-[15px] leading-relaxed text-ink-soft">
         <p>
-          <strong className="text-ink">TBD Times</strong>는 전세계의 AI·인공지능 소식과 투자·금융
+          <strong className="text-ink">Tibedra</strong>는 전세계의 AI·인공지능 소식과 투자·금융
           뉴스를 매일 아침 자동으로 모아 한 페이지에서 빠르게 훑어볼 수 있도록 정리하는 데일리
           브리핑 서비스입니다.
         </p>
@@ -63,7 +63,7 @@ export default function AboutPage() {
 
       <h2 className="mt-10 font-serif text-2xl font-bold">편집 원칙</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-        TBD Times는 독자가 매일 아침 가장 적은 시간으로 가장 중요한 흐름을 파악하도록 돕는 것을
+        Tibedra는 독자가 매일 아침 가장 적은 시간으로 가장 중요한 흐름을 파악하도록 돕는 것을
         목표로 합니다. 이를 위해 다음 원칙을 지킵니다.
       </p>
       <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-soft">

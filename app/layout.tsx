@@ -9,8 +9,8 @@ const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "TBD Times — 매일 아침 AI·투자 뉴스 브리핑",
-    template: "%s · TBD Times",
+    default: "Tibedra — 매일 아침 AI·투자 뉴스 브리핑",
+    template: "%s · Tibedra",
   },
   description:
     "전세계 AI·인공지능과 투자·금융 뉴스를 매일 아침 자동으로 모아 한눈에 보여주는 데일리 브리핑.",
@@ -18,14 +18,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    siteName: "TBD Times",
-    title: "TBD Times — 매일 아침 AI·투자 뉴스 브리핑",
+    siteName: "Tibedra",
+    title: "Tibedra — 매일 아침 AI·투자 뉴스 브리핑",
     description: "전세계 AI·투자 소식을 매일 아침 한눈에.",
     url: siteUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "TBD Times — 매일 아침 AI·투자 뉴스 브리핑",
+    title: "Tibedra — 매일 아침 AI·투자 뉴스 브리핑",
     description: "전세계 AI·투자 소식을 매일 아침 한눈에.",
   },
   robots: { index: true, follow: true },
@@ -39,7 +39,7 @@ const siteJsonLd = {
     {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
-      name: "TBD Times",
+      name: "Tibedra",
       url: siteUrl,
       description:
         "전세계 AI·투자·코인 뉴스를 매일 아침 자동으로 모아 전하는 한국어 데일리 뉴스 브리핑.",
@@ -48,7 +48,7 @@ const siteJsonLd = {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
       url: siteUrl,
-      name: "TBD Times",
+      name: "Tibedra",
       inLanguage: "ko-KR",
       publisher: { "@id": `${siteUrl}/#organization` },
       potentialAction: {

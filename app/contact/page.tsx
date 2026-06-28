@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "문의",
   description:
-    "TBD Times 제휴·광고, 제보, 기사 정정·삭제, 저작권 관련 문의 안내. 이메일로 연락 주세요.",
+    "Tibedra 제휴·광고, 제보, 기사 정정·삭제, 저작권 관련 문의 안내. 이메일로 연락 주세요.",
 };
 
 const EMAIL = "dr.derek.ji@gmail.com";
@@ -20,7 +20,7 @@ export default function ContactPage() {
     <div className="container-page max-w-3xl py-12">
       <h1 className="font-serif text-3xl sm:text-4xl font-extrabold">문의</h1>
       <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
-        TBD Times에 대한 의견, 제휴·광고 제안, 제보, 기사 정정·삭제 및 저작권 관련 요청은 아래
+        Tibedra에 대한 의견, 제휴·광고 제안, 제보, 기사 정정·삭제 및 저작권 관련 요청은 아래
         이메일로 연락 주세요. 영업일 기준으로 확인 후 신속히 답변드리겠습니다.
       </p>
 
@@ -45,7 +45,7 @@ export default function ContactPage() {
       </div>
 
       <p className="mt-10 text-sm leading-relaxed text-muted">
-        TBD Times는 외부 매체의 공개 RSS 피드를 기반으로 헤드라인과 요약을 제공하며, 모든 기사의
+        Tibedra는 외부 매체의 공개 RSS 피드를 기반으로 헤드라인과 요약을 제공하며, 모든 기사의
         저작권은 각 매체에 있습니다. 권리자의 정당한 요청이 있을 경우 해당 항목을 신속히 조치합니다.
       </p>
     </div>

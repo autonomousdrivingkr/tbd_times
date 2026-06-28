@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "이용약관",
-  description: "TBD Times 서비스 이용약관 — 서비스 내용, 저작권, 면책, 외부 링크에 대한 안내.",
+  description: "Tibedra 서비스 이용약관 — 서비스 내용, 저작권, 면책, 외부 링크에 대한 안내.",
 };
 
 export default function TermsPage() {
@@ -16,7 +16,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-serif text-xl font-bold text-ink">제1조 (목적)</h2>
           <p className="mt-2">
-            본 약관은 TBD Times(이하 &ldquo;사이트&rdquo;)가 제공하는 뉴스 브리핑 서비스의 이용 조건과
+            본 약관은 Tibedra(이하 &ldquo;사이트&rdquo;)가 제공하는 뉴스 브리핑 서비스의 이용 조건과
             절차, 이용자와 사이트의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.
           </p>
         </section>

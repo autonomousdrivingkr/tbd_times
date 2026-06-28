@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "개인정보 처리방침",
-  description: "TBD Times 개인정보 처리방침 및 광고(Google AdSense) 관련 안내.",
+  description: "Tibedra 개인정보 처리방침 및 광고(Google AdSense) 관련 안내.",
 };
 
 export default function PrivacyPage() {
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-serif text-xl font-bold text-ink">1. 수집하는 정보</h2>
           <p className="mt-2">
-            TBD Times 는 회원가입을 요구하지 않으며, 이름·이메일 등 개인을 직접 식별하는 정보를
+            Tibedra는 회원가입을 요구하지 않으며, 이름·이메일 등 개인을 직접 식별하는 정보를
             수집하지 않습니다. 다만 서비스 운영과 광고 제공을 위해 쿠키 및 접속 로그(브라우저 종류,
             접속 시각 등)가 자동으로 수집될 수 있습니다.
           </p>
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
           <h2 className="font-serif text-xl font-bold text-ink">4. 외부 링크</h2>
           <p className="mt-2">
             본 사이트의 기사 링크는 외부 매체로 연결됩니다. 외부 사이트의 개인정보 처리에 대해서는
-            해당 사이트의 정책이 적용되며, TBD Times 는 책임지지 않습니다.
+            해당 사이트의 정책이 적용되며, Tibedra는 책임지지 않습니다.
           </p>
         </section>
 

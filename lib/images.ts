@@ -5,7 +5,7 @@ import type { NewsItem } from "./rss";
 // 대표 이미지를 가져와 채운다. 결과(이미지 URL 문자열)는 24시간 캐시한다.
 
 const UA =
-  "Mozilla/5.0 (compatible; TBDTimesBot/1.0; +https://tbdtimes.vercel.app/about)";
+  "Mozilla/5.0 (compatible; TibedraBot/1.0; +https://tibedra.com/about)";
 
 function absolutize(url: string, base: string): string | null {
   try {

@@ -24,7 +24,7 @@ export default function Header() {
         {/* 브랜드 */}
         <div className="flex flex-col items-center gap-1 border-t border-line py-5">
           <Link href="/" className="font-serif text-3xl sm:text-4xl font-extrabold tracking-tight">
-            TBD&nbsp;Times
+            Tibedra
           </Link>
           <p className="text-xs sm:text-sm text-muted">
             매일 아침, 전세계 AI·투자 소식을 한눈에

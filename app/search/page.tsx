@@ -9,7 +9,7 @@ import AdSlot from "@/components/AdSlot";
 
 export const metadata: Metadata = {
   title: "검색",
-  description: "TBD Times 에 수집된 AI·투자·코인 뉴스를 키워드로 검색합니다.",
+  description: "Tibedra에 수집된 AI·투자·코인 뉴스를 키워드로 검색합니다.",
   robots: { index: false, follow: true },
 };
 
