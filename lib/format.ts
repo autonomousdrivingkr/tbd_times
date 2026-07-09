@@ -21,6 +21,20 @@ export function relativeTime(iso: string | null): string {
   }).format(then);
 }
 
+export function dateLabel(iso: string | null): string {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KST,
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(t);
+}
+
 export function todayLabel(): string {
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: KST,

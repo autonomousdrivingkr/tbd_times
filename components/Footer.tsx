@@ -9,11 +9,12 @@ export default function Footer() {
           <div className="max-w-sm">
             <p className="font-serif text-xl font-bold">Tibedra</p>
             <p className="mt-2 text-sm text-muted">
-              AI·반도체·투자·빅테크·여행 소식을 매일 아침 모아 정리합니다. 모든 기사는
-              요약과 함께 원문 출처로 연결됩니다.
+              AI·반도체·투자·빅테크·여행 소식을 매일 아침 모아 해설과 함께 정리합니다.
+              모든 브리핑은 원문 출처로 연결됩니다.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link href="/briefing" className="text-ink-soft hover:text-accent">오늘의 브리핑</Link>
             <Link href="/ai" className="text-ink-soft hover:text-accent">AI</Link>
             <Link href="/topic/semiconductor" className="text-ink-soft hover:text-accent">반도체</Link>
             <Link href="/investment" className="text-ink-soft hover:text-accent">투자</Link>

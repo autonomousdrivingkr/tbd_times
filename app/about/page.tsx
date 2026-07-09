@@ -23,8 +23,10 @@ export default function AboutPage() {
         </p>
         <p>
           각 기사는 신뢰할 수 있는 매체의 공개 RSS 피드에서 <strong className="text-ink">헤드라인과
-          짧은 요약</strong>만 가져오며, 본문 전체는 제공하지 않습니다. 더 읽고 싶은 기사는 클릭하면
-          원문 매체로 이동합니다. 저작권은 각 매체에 있습니다.
+          짧은 요약</strong>만 가져오며, 본문 전체는 복제하지 않습니다. 여기에 Tibedra 편집팀이 AI
+          도구의 도움을 받아 <strong className="text-ink">배경·맥락·시사점을 덧붙인 해설 브리핑</strong>을
+          함께 제공하며, 모든 브리핑에는 원문 매체로 가는 출처 링크가 명시됩니다. 기사 저작권은 각
+          매체에 있습니다.
         </p>
         <p>
           뉴스는 매일 아침 <strong className="text-ink">06:00(KST)</strong>에 자동 갱신되며, 그 사이에도
@@ -33,6 +35,36 @@ export default function AboutPage() {
           제공합니다.
         </p>
       </div>
+
+      <h2 className="mt-10 font-serif text-2xl font-bold">자체 콘텐츠</h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        Tibedra는 단순 수집을 넘어 다음 콘텐츠를 직접 만듭니다. 자체 콘텐츠는 Tibedra 편집팀
+        명의로 발행되며, AI 도구를 활용해 작성된 경우 해당 페이지에 이를 표기합니다.
+      </p>
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-soft">
+        <li>
+          <a className="text-accent underline" href="/briefing">
+            오늘의 브리핑
+          </a>{" "}
+          — 매일 아침 주요 뉴스를 3가지 테마로 묶어 해설하는 데일리 칼럼
+        </li>
+        <li>
+          <strong className="text-ink">기사별 해설 브리핑</strong> — 개별 기사에 배경과 맥락,
+          핵심 포인트를 덧붙인 해설 페이지
+        </li>
+        <li>
+          <a className="text-accent underline" href="/glossary">
+            용어사전
+          </a>{" "}
+          — AI·투자·코인 핵심 용어를 직접 풀이한 해설 모음
+        </li>
+        <li>
+          <a className="text-accent underline" href="/faq">
+            자주 묻는 질문
+          </a>{" "}
+          — 서비스와 뉴스 읽기에 대한 안내
+        </li>
+      </ul>
 
       <h2 className="mt-10 font-serif text-2xl font-bold">수집 매체</h2>
       <div className="mt-4 grid gap-6 sm:grid-cols-3">

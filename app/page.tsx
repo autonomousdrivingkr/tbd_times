@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { getNews, type NewsItem } from "@/lib/rss";
+import { getDailyBriefing } from "@/lib/briefing";
 import { translateItems } from "@/lib/translate";
 import { resolveImages } from "@/lib/images";
 import { updatedAtLabel } from "@/lib/format";
@@ -9,6 +10,7 @@ import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS } from "@/lib/sections";
 import NewsCard from "@/components/NewsCard";
 import SectionHeading from "@/components/SectionHeading";
 import AdSlot from "@/components/AdSlot";
+import DailyTerms from "@/components/DailyTerms";
 
 // 30분마다 정적 페이지를 재생성(ISR). 아침 Cron 이 강제 무효화도 한다.
 export const revalidate = 1800;
@@ -16,7 +18,7 @@ export const revalidate = 1800;
 const SECONDARY_TOPICS = TOPICS.filter((t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug));
 
 export default async function HomePage() {
-  const all = await getNews();
+  const [all, briefing] = await Promise.all([getNews(), getDailyBriefing()]);
 
   // 상단 섹션별 상위 항목 선별 (카테고리 또는 키워드 토픽)
   const sections = NAV_SECTIONS.map((s) => {
@@ -53,14 +55,25 @@ export default async function HomePage() {
 
   return (
     <div className="container-page py-8">
-      {/* 오늘의 브리핑 바 */}
-      <div className="mb-6 flex items-center justify-between rounded-lg bg-accent-soft px-4 py-3">
-        <p className="text-sm font-semibold text-accent">📰 오늘의 브리핑</p>
-        <p className="text-xs text-ink-soft">
-          마지막 업데이트 <span className="tabular-nums font-medium">{updatedAtLabel()}</span> · 매일
-          아침 06:00 자동 갱신
+      {/* 오늘의 브리핑 (데일리 칼럼으로 연결) */}
+      <Link
+        href="/briefing"
+        className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-accent-soft px-4 py-3 transition-opacity hover:opacity-90"
+      >
+        <p className="min-w-0 text-sm font-semibold text-accent">
+          📰 오늘의 브리핑
+          {briefing && (
+            <span className="ml-2 font-serif font-bold text-ink">{briefing.headline}</span>
+          )}
         </p>
-      </div>
+        <p className="text-xs text-ink-soft">
+          <span className="mr-3 hidden sm:inline">
+            마지막 업데이트{" "}
+            <span className="tabular-nums font-medium">{updatedAtLabel()}</span>
+          </span>
+          <span className="font-semibold text-accent">전문 보기 →</span>
+        </p>
+      </Link>
 
       {/* 보조 토픽 칩 */}
       {SECONDARY_TOPICS.length > 0 && (
@@ -118,6 +131,7 @@ export default async function HomePage() {
             items={tl(section.items)}
           />
           {idx === 0 && <AdRow slot={inlineAds[0]} />}
+          {idx === 1 && <DailyTerms />}
           {idx === 2 && <AdRow slot={inlineAds[1]} />}
         </Fragment>
       ))}

@@ -1,12 +1,15 @@
 import type { MetadataRoute } from "next";
 import { TOPICS } from "@/lib/topics";
+import { getNews } from "@/lib/rss";
+import { newsSlug } from "@/lib/slug";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const now = new Date();
 
   const main: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: "hourly", priority: 1 },
+    { url: `${base}/briefing`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${base}/ai`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/investment`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/travel`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
@@ -25,5 +28,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...main, ...topics];
+  // 현재 피드에 살아 있는 브리핑 상세 페이지 (최신 60건)
+  const news: MetadataRoute.Sitemap = (await getNews()).slice(0, 60).map((n) => ({
+    url: `${base}/news/${newsSlug(n.link)}`,
+    lastModified: n.isoDate ? new Date(n.isoDate) : now,
+    changeFrequency: "daily" as const,
+    priority: 0.6,
+  }));
+
+  return [...main, ...topics, ...news];
 }

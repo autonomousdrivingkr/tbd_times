@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { type NewsItem } from "@/lib/rss";
 import { relativeTime } from "@/lib/format";
+import { newsPath } from "@/lib/slug";
 import CategoryBadge from "./CategoryBadge";
 import Thumb from "./Thumb";
 
@@ -17,6 +19,8 @@ export default function NewsCard({
   const title = item.titleKo ?? item.title;
   const summary = item.summaryKo ?? item.summary;
   const originalTitle = item.titleKo && item.titleKo !== item.title ? item.title : null;
+  // 카드는 사이트 내부 브리핑 페이지로 연결한다 (원문 링크는 브리핑 페이지 안에 있음).
+  const href = newsPath(item);
 
   const meta = (
     <div className="flex items-center gap-2 text-xs text-muted">
@@ -30,7 +34,7 @@ export default function NewsCard({
   if (variant === "lead") {
     return (
       <article className="group">
-        <a href={item.link} target="_blank" rel="noopener noreferrer nofollow" className="block">
+        <Link href={href} className="block">
           <Thumb
             src={item.image}
             alt={item.title}
@@ -48,7 +52,7 @@ export default function NewsCard({
               <p className="text-[15px] leading-relaxed text-ink-soft line-clamp-3">{summary}</p>
             )}
           </div>
-        </a>
+        </Link>
       </article>
     );
   }
@@ -57,12 +61,7 @@ export default function NewsCard({
   if (variant === "compact") {
     return (
       <article className="group">
-        <a
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          className="flex gap-3"
-        >
+        <Link href={href} className="flex gap-3">
           <Thumb
             src={item.image}
             alt={item.title}
@@ -74,7 +73,7 @@ export default function NewsCard({
             </h3>
             {meta}
           </div>
-        </a>
+        </Link>
       </article>
     );
   }
@@ -82,7 +81,7 @@ export default function NewsCard({
   // ── 기본 카드 ──
   return (
     <article className="group">
-      <a href={item.link} target="_blank" rel="noopener noreferrer nofollow" className="block">
+      <Link href={href} className="block">
         <Thumb src={item.image} alt={item.title} className="aspect-[16/10] w-full rounded-lg" />
         <div className="mt-3 space-y-1.5">
           {meta}
@@ -93,7 +92,7 @@ export default function NewsCard({
             <p className="text-sm leading-relaxed text-ink-soft line-clamp-2">{summary}</p>
           )}
         </div>
-      </a>
+      </Link>
     </article>
   );
 }
