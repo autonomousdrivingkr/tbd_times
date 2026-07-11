@@ -46,6 +46,9 @@ interface RawBriefing {
   closing: string;
 }
 
+// 일시적 실패를 나타내는 오류. 던지면 unstable_cache 가 저장하지 않아 재시도된다.
+class BriefingError extends Error {}
+
 async function callGemini(
   items: { i: number; t: string; s: string; src: string }[]
 ): Promise<RawBriefing | null> {
@@ -69,8 +72,9 @@ async function callGemini(
     JSON.stringify(items),
   ].join("\n");
 
+  let res: Response;
   try {
-    const res = await fetch(
+    res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
       {
         method: "POST",
@@ -104,25 +108,32 @@ async function callGemini(
           },
         }),
         cache: "no-store", // 캐싱은 바깥 unstable_cache 가 담당
+        signal: AbortSignal.timeout(30000),
       }
     );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return null;
-    const parsed = JSON.parse(text) as RawBriefing;
-    if (!parsed.headline || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
-      return null;
-    }
-    return parsed;
   } catch {
-    return null;
+    throw new BriefingError("gemini fetch failed");
   }
+  if (!res.ok) throw new BriefingError(`gemini status ${res.status}`);
+  const data = await res.json();
+  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new BriefingError("gemini empty response");
+  let parsed: RawBriefing;
+  try {
+    parsed = JSON.parse(text) as RawBriefing;
+  } catch {
+    throw new BriefingError("gemini bad json");
+  }
+  if (!parsed.headline || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
+    throw new BriefingError("gemini incomplete");
+  }
+  return parsed;
 }
 
 async function buildBriefing(dateKey: string): Promise<DailyBriefing | null> {
   const all = await getNews();
-  if (all.length === 0) return null;
+  // 피드가 일시적으로 비면 캐시하지 않고 다음 요청에서 재시도
+  if (all.length === 0) throw new BriefingError("empty feed");
   const top = await translateItems(all.slice(0, 18));
 
   const payload = top.map((n, i) => ({
@@ -133,7 +144,7 @@ async function buildBriefing(dateKey: string): Promise<DailyBriefing | null> {
   }));
 
   const raw = await callGemini(payload);
-  if (!raw) return null;
+  if (!raw) return null; // API 키 없음 → 기능 비활성(캐시 허용)
 
   const toRef = (idx: number): BriefingRef | null => {
     const it: NewsItem | undefined = top[idx];
@@ -156,12 +167,17 @@ async function buildBriefing(dateKey: string): Promise<DailyBriefing | null> {
 
 // 날짜 키 단위 캐싱: 같은 날은 한 번만 생성. 아침 Cron(tag "news")이 무효화하면
 // 그날 첫 방문 때 최신 피드로 다시 생성된다.
-const cachedBriefing = unstable_cache(buildBriefing, ["daily-briefing-v1"], {
+// BriefingError 는 캐시되지 않으므로 일시적 실패는 다음 요청에서 재시도된다.
+const cachedBriefing = unstable_cache(buildBriefing, ["daily-briefing-v2"], {
   revalidate: 60 * 60 * 24,
   tags: ["news"],
 });
 
-/** 오늘(KST)의 데일리 브리핑을 반환한다. 생성 실패 시 null. */
-export function getDailyBriefing(): Promise<DailyBriefing | null> {
-  return cachedBriefing(kstDateKey());
+/** 오늘(KST)의 데일리 브리핑을 반환한다. 생성 실패 시 null(홈/브리핑 페이지는 대체 UI). */
+export async function getDailyBriefing(): Promise<DailyBriefing | null> {
+  try {
+    return await cachedBriefing(kstDateKey());
+  } catch {
+    return null;
+  }
 }

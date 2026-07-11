@@ -16,6 +16,11 @@ interface Pair {
   s: string;
 }
 
+// 일시적 실패(네트워크·API 오류)를 나타내는 오류.
+// callGemini 가 이 오류를 던지면 unstable_cache 가 결과를 저장하지 않아
+// 다음 요청에서 자동으로 재시도된다(빈 번역이 캐시에 눌러앉는 문제 방지).
+class TranslateError extends Error {}
+
 async function callGemini(payloadJson: string): Promise<Pair[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return [];
@@ -24,6 +29,7 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
   try {
     input = JSON.parse(payloadJson);
   } catch {
+    // 입력 자체가 잘못된 경우는 재시도해도 소용없으므로 빈 결과(캐시 허용)
     return [];
   }
 
@@ -38,8 +44,9 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
     JSON.stringify(input),
   ].join("\n");
 
+  let res: Response;
   try {
-    const res = await fetch(
+    res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
       {
         method: "POST",
@@ -59,27 +66,50 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
             },
           },
         }),
-        // 번역 결과 자체도 6시간 캐시 (이중 안전장치)
-        next: { revalidate: 60 * 60 * 6 },
+        // 캐싱은 바깥 unstable_cache 가 전담(성공 결과만 저장). 실패 응답이
+        // Next fetch 캐시에 눌러앉지 않도록 여기서는 캐시하지 않는다.
+        cache: "no-store",
+        signal: AbortSignal.timeout(20000),
       }
     );
-    if (!res.ok) return [];
-    const data = await res.json();
-    const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return [];
-    const parsed = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return [];
+    // 네트워크 오류·타임아웃 → 재시도 대상
+    throw new TranslateError("gemini fetch failed");
   }
+  if (!res.ok) throw new TranslateError(`gemini status ${res.status}`);
+  const data = await res.json();
+  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new TranslateError("gemini empty response");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new TranslateError("gemini bad json");
+  }
+  if (!Array.isArray(parsed)) throw new TranslateError("gemini bad shape");
+  return parsed as Pair[];
 }
 
 // 배치(payload) 단위로 캐싱. 동일 헤드라인 묶음은 한 번만 번역된다.
+// callGemini 가 던지는 TranslateError 는 캐시되지 않으므로 실패 배치는 자동 재시도된다.
 const cachedTranslate = unstable_cache(
   async (payloadJson: string) => callGemini(payloadJson),
-  ["gemini-translate-v1"],
+  ["gemini-translate-v2"],
   { revalidate: 60 * 60 * 24, tags: ["news"] }
 );
+
+// 실패한 배치는 이번 요청에서 원문을 유지하되 캐시에 저장하지 않는다(다음 재생성 때 재시도).
+// 일시적 오류를 한 번 더 즉시 재시도해 사용자에게 영어가 노출될 확률을 줄인다.
+async function translateBatch(payloadJson: string): Promise<Pair[]> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await cachedTranslate(payloadJson);
+    } catch {
+      /* 다음 시도 */
+    }
+  }
+  return [];
+}
 
 /**
  * 표시용 items 에 한국어 제목(titleKo)·요약(summaryKo)을 채워 반환한다.
@@ -109,17 +139,25 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     return result;
   }
 
-  const CHUNK = 40;
+  // 배치가 크면 Gemini 응답이 느려/실패해 통째로 영어로 남을 위험이 크다.
+  // 20개 단위로 나눠 실패 영향 범위를 줄이고, 배치들을 병렬 처리한다.
+  const CHUNK = 20;
+  const batches: number[][] = [];
   for (let start = 0; start < needIdx.length; start += CHUNK) {
-    const idxs = needIdx.slice(start, start + CHUNK);
-    const payload = idxs.map((i) => ({ t: result[i].title, s: result[i].summary }));
-    const translated = await cachedTranslate(JSON.stringify(payload));
-    idxs.forEach((i, k) => {
-      const tr = translated[k];
-      result[i].titleKo = tr?.t?.trim() || result[i].title;
-      result[i].summaryKo = tr?.s?.trim() || result[i].summary;
-    });
+    batches.push(needIdx.slice(start, start + CHUNK));
   }
+
+  await Promise.all(
+    batches.map(async (idxs) => {
+      const payload = idxs.map((i) => ({ t: result[i].title, s: result[i].summary }));
+      const translated = await translateBatch(JSON.stringify(payload));
+      idxs.forEach((i, k) => {
+        const tr = translated[k];
+        result[i].titleKo = tr?.t?.trim() || result[i].title;
+        result[i].summaryKo = tr?.s?.trim() || result[i].summary;
+      });
+    })
+  );
 
   return result;
 }

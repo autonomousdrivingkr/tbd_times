@@ -87,3 +87,29 @@ body {
   background: var(--color-accent);
   color: #fff;
 }
+
+/* ── Google 번역 위젯 UI 억제 ─────────────────────────
+   상단 배너/툴팁만 감추고, 가젯 자체는 번역이 초기화되도록 화면 밖으로만 숨긴다
+   (display:none 이면 위젯이 초기화되지 않을 수 있음). 쿠키 기반 번역에는 영향 없음. */
+.goog-te-banner-frame,
+iframe.skiptranslate,
+.goog-te-gadget-icon,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+#google_translate_element {
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+body {
+  top: 0 !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}

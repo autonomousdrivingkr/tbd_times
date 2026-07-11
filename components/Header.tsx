@@ -2,6 +2,7 @@ import Link from "next/link";
 import { todayLabel } from "@/lib/format";
 import { TOPICS } from "@/lib/topics";
 import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS } from "@/lib/sections";
+import LangSwitcher from "@/components/LangSwitcher";
 
 const NAV = [
   { href: "/", label: "홈" },
@@ -16,12 +17,15 @@ export default function Header() {
   return (
     <header className="border-b border-line bg-paper/80 backdrop-blur sticky top-0 z-40">
       <div className="container-page">
-        {/* 상단 날짜 줄 */}
-        <div className="flex items-center justify-between py-2 text-[11px] text-muted">
+        {/* 상단 날짜 줄 + 언어 선택 */}
+        <div className="flex items-center justify-between gap-2 py-2 text-[11px] text-muted">
           <span className="tabular-nums">{todayLabel()}</span>
-          <span className="hidden sm:inline tracking-widest uppercase">
-            Daily Tech · Markets · Travel Briefing
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="hidden md:inline tracking-widest uppercase">
+              Daily Tech · Markets · Travel Briefing
+            </span>
+            <LangSwitcher />
+          </div>
         </div>
 
         {/* 브랜드 */}

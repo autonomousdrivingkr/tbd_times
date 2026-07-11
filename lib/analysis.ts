@@ -20,6 +20,9 @@ export interface Analysis {
   outlook: string;
 }
 
+// 일시적 실패를 나타내는 오류. 던지면 unstable_cache 가 결과를 저장하지 않아 재시도된다.
+class AnalysisError extends Error {}
+
 async function callGemini(payloadJson: string): Promise<Analysis | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -47,8 +50,9 @@ async function callGemini(payloadJson: string): Promise<Analysis | null> {
     JSON.stringify(input),
   ].join("\n");
 
+  let res: Response;
   try {
-    const res = await fetch(
+    res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
       {
         method: "POST",
@@ -70,36 +74,51 @@ async function callGemini(payloadJson: string): Promise<Analysis | null> {
             },
           },
         }),
-        next: { revalidate: 60 * 60 * 24 * 7 },
+        cache: "no-store",
+        signal: AbortSignal.timeout(25000),
       }
     );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return null;
-    const parsed = JSON.parse(text) as Analysis;
-    if (!parsed.lead || !parsed.background || !Array.isArray(parsed.points)) return null;
-    return parsed;
   } catch {
-    return null;
+    throw new AnalysisError("gemini fetch failed");
   }
+  if (!res.ok) throw new AnalysisError(`gemini status ${res.status}`);
+  const data = await res.json();
+  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new AnalysisError("gemini empty response");
+  let parsed: Analysis;
+  try {
+    parsed = JSON.parse(text) as Analysis;
+  } catch {
+    throw new AnalysisError("gemini bad json");
+  }
+  // 스키마상 유효하지 않으면 재시도 대상으로 간주(캐시 방지)
+  if (!parsed.lead || !parsed.background || !Array.isArray(parsed.points)) {
+    throw new AnalysisError("gemini incomplete");
+  }
+  return parsed;
 }
 
 // 기사(payload) 단위로 캐싱. 같은 기사는 7일에 한 번만 해설을 생성한다.
+// AnalysisError 는 캐시되지 않으므로 실패한 해설은 다음 방문 때 재시도된다.
 const cachedAnalysis = unstable_cache(
   async (payloadJson: string) => callGemini(payloadJson),
-  ["gemini-analysis-v1"],
+  ["gemini-analysis-v2"],
   { revalidate: 60 * 60 * 24 * 7, tags: ["news"] }
 );
 
-/** 기사 하나에 대한 해설을 생성(캐시)해서 반환한다. 실패 시 null. */
+/** 기사 하나에 대한 해설을 생성(캐시)해서 반환한다. 실패 시 null(요약만 표시). */
 export async function getAnalysis(item: NewsItem): Promise<Analysis | null> {
   const payload = JSON.stringify({
     title: item.titleKo ?? item.title,
     summary: item.summaryKo ?? item.summary,
     source: item.source,
   });
-  return cachedAnalysis(payload);
+  try {
+    return await cachedAnalysis(payload);
+  } catch {
+    // 일시적 실패: 이번엔 해설 없이(요약만) 표시하고 다음 요청에서 재시도
+    return null;
+  }
 }
 
 export interface MatchedTerm extends Term {
