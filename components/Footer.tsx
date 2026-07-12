@@ -20,6 +20,7 @@ export default function Footer() {
             <Link href="/investment" className="text-ink-soft hover:text-accent">투자</Link>
             <Link href="/topic/bigtech" className="text-ink-soft hover:text-accent">빅테크</Link>
             <Link href="/travel" className="text-ink-soft hover:text-accent">여행</Link>
+            <Link href="/food" className="text-ink-soft hover:text-accent">맛집</Link>
             <Link href="/about" className="text-ink-soft hover:text-accent">소개</Link>
             <Link href="/glossary" className="text-ink-soft hover:text-accent">용어사전</Link>
             <Link href="/faq" className="text-ink-soft hover:text-accent">자주 묻는 질문</Link>

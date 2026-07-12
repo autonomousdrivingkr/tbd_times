@@ -3,11 +3,13 @@ import type { Category } from "./sources";
 // 사이트 상단 섹션 구성.
 // - kind "category": 전용 RSS 피드를 가진 카테고리 (getNews(category) 로 수집)
 // - kind "topic"   : 전체 뉴스에서 키워드로 필터링하는 섹션 (lib/topics.ts 의 slug)
+// - kind "places"  : 뉴스가 아닌 장소 정보 섹션 (lib/naver-local.ts 로 수집).
+//   NewsItem 형태가 아니므로 홈의 공용 섹션 렌더링 루프에서는 제외하고 별도 처리한다.
 export interface NavSection {
   label: string;
   href: string;
-  kind: "category" | "topic";
-  /** category key 또는 topic slug */
+  kind: "category" | "topic" | "places";
+  /** category key, topic slug 또는 places 섹션 key */
   key: string;
   /** 강조 색상 (CSS 변수) */
   accent: string;
@@ -55,6 +57,14 @@ export const NAV_SECTIONS: NavSection[] = [
     key: "travel",
     accent: "var(--color-travel)",
     subtitle: "국내외 여행지·항공·레저 소식",
+  },
+  {
+    label: "맛집",
+    href: "/food",
+    kind: "places",
+    key: "food",
+    accent: "var(--color-crypto)",
+    subtitle: "네이버 지역정보로 찾아보는 전국 맛집",
   },
 ];
 

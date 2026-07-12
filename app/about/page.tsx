@@ -107,6 +107,16 @@ export default function AboutPage() {
         </div>
       </div>
 
+      <h2 className="mt-10 font-serif text-2xl font-bold">맛집 정보 출처</h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        <a className="text-accent underline" href="/food">
+          맛집
+        </a>{" "}
+        섹션의 상호명·주소·연락처 등 장소 정보는 뉴스와 달리 네이버 지역정보 검색을 통해
+        가져옵니다. 최신 영업 상태·리뷰는 각 카드에 연결된 네이버 지도 링크에서 확인하시길
+        권합니다.
+      </p>
+
       <h2 className="mt-10 font-serif text-2xl font-bold">편집 원칙</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
         Tibedra는 독자가 매일 아침 가장 적은 시간으로 가장 중요한 흐름을 파악하도록 돕는 것을

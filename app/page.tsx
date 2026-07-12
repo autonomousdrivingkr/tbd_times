@@ -7,10 +7,12 @@ import { resolveImages } from "@/lib/images";
 import { updatedAtLabel } from "@/lib/format";
 import { TOPICS, getTopic, filterByTopic } from "@/lib/topics";
 import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS, EMBEDDED_TOPIC_SLUGS } from "@/lib/sections";
+import { getRestaurants } from "@/lib/naver-local";
 import NewsCard from "@/components/NewsCard";
 import SectionHeading from "@/components/SectionHeading";
 import AdSlot from "@/components/AdSlot";
 import DailyTerms from "@/components/DailyTerms";
+import RestaurantCard from "@/components/RestaurantCard";
 
 // 30분마다 정적 페이지를 재생성(ISR). 아침 Cron 이 강제 무효화도 한다.
 export const revalidate = 1800;
@@ -20,11 +22,19 @@ const SECONDARY_TOPICS = TOPICS.filter(
   (t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug) && !EMBEDDED_TOPIC_SLUGS.includes(t.slug)
 );
 
+// 뉴스(NewsItem) 기반 섹션만 — "places"(맛집)는 데이터 형태가 달라 별도 처리한다.
+const NEWS_SECTIONS = NAV_SECTIONS.filter((s) => s.kind !== "places");
+const FOOD_SECTION = NAV_SECTIONS.find((s) => s.kind === "places");
+
 export default async function HomePage() {
-  const [all, briefing] = await Promise.all([getNews(), getDailyBriefing()]);
+  const [all, briefing, restaurants] = await Promise.all([
+    getNews(),
+    getDailyBriefing(),
+    getRestaurants(),
+  ]);
 
   // 상단 섹션별 상위 항목 선별 (카테고리 또는 키워드 토픽)
-  const sections = NAV_SECTIONS.map((s) => {
+  const sections = NEWS_SECTIONS.map((s) => {
     let items: NewsItem[];
     if (s.kind === "category") {
       items = all.filter((n) => n.category === s.key);
@@ -151,6 +161,23 @@ export default async function HomePage() {
           {idx === 2 && <AdRow slot={inlineAds[1]} />}
         </Fragment>
       ))}
+
+      {/* 맛집 — 네이버 지역정보 기반, 뉴스와 데이터 형태가 달라 별도 렌더 */}
+      {FOOD_SECTION && restaurants.length > 0 && (
+        <section className="mb-14">
+          <SectionHeading
+            title={FOOD_SECTION.label}
+            subtitle={FOOD_SECTION.subtitle}
+            href={FOOD_SECTION.href}
+            accent={FOOD_SECTION.accent}
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {restaurants.slice(0, 6).map((p) => (
+              <RestaurantCard key={p.id} place={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {all.length === 0 && (
         <p className="py-20 text-center text-muted">
