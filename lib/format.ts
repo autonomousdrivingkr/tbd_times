@@ -52,3 +52,15 @@ export function updatedAtLabel(): string {
     minute: "2-digit",
   }).format(new Date());
 }
+
+/** ISO 문자열을 KST 시:분으로 포맷 (없으면 빈 문자열) */
+export function timeLabel(iso: string | null): string {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KST,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(t);
+}
