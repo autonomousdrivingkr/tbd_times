@@ -6,7 +6,7 @@ import { translateItems } from "@/lib/translate";
 import { resolveImages } from "@/lib/images";
 import { updatedAtLabel } from "@/lib/format";
 import { TOPICS, getTopic, filterByTopic } from "@/lib/topics";
-import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS } from "@/lib/sections";
+import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS, EMBEDDED_TOPIC_SLUGS } from "@/lib/sections";
 import NewsCard from "@/components/NewsCard";
 import SectionHeading from "@/components/SectionHeading";
 import AdSlot from "@/components/AdSlot";
@@ -15,7 +15,10 @@ import DailyTerms from "@/components/DailyTerms";
 // 30분마다 정적 페이지를 재생성(ISR). 아침 Cron 이 강제 무효화도 한다.
 export const revalidate = 1800;
 
-const SECONDARY_TOPICS = TOPICS.filter((t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug));
+// 상단 섹션으로 승격되거나 다른 섹션에 묶인 토픽은 칩에서 제외
+const SECONDARY_TOPICS = TOPICS.filter(
+  (t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug) && !EMBEDDED_TOPIC_SLUGS.includes(t.slug)
+);
 
 export default async function HomePage() {
   const [all, briefing] = await Promise.all([getNews(), getDailyBriefing()]);

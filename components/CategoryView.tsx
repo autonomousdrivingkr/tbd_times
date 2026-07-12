@@ -11,14 +11,7 @@ import {
 import { updatedAtLabel } from "@/lib/format";
 import NewsFeed from "@/components/NewsFeed";
 
-export default async function CategoryView({
-  category,
-  topContent,
-}: {
-  category: Category;
-  /** 헤더와 뉴스 피드 사이에 노출할 섹션 전용 콘텐츠 (예: 투자 대시보드) */
-  topContent?: React.ReactNode;
-}) {
+export default async function CategoryView({ category }: { category: Category }) {
   // 한 페이지에 너무 많은 기사/광고가 쌓이지 않도록 상한을 둔다.
   const raw = (await getNews(category)).slice(0, 45);
   const items = await resolveImages(await translateItems(raw));
@@ -39,8 +32,6 @@ export default async function CategoryView({
           {CATEGORY_INTRO[category]}
         </p>
       </header>
-
-      {topContent}
 
       <NewsFeed items={items} showCategory={false} />
     </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { todayLabel } from "@/lib/format";
 import { TOPICS } from "@/lib/topics";
-import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS } from "@/lib/sections";
+import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS, EMBEDDED_TOPIC_SLUGS } from "@/lib/sections";
 import LangSwitcher from "@/components/LangSwitcher";
 
 const NAV = [
@@ -10,8 +10,10 @@ const NAV = [
   ...NAV_SECTIONS.map((s) => ({ href: s.href, label: s.label })),
 ];
 
-// 상단 섹션으로 승격되지 않은 보조 토픽만 칩으로 노출
-const SECONDARY_TOPICS = TOPICS.filter((t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug));
+// 상단 섹션으로 승격되거나 다른 섹션에 묶인 토픽은 칩에서 제외
+const SECONDARY_TOPICS = TOPICS.filter(
+  (t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug) && !EMBEDDED_TOPIC_SLUGS.includes(t.slug)
+);
 
 export default function Header() {
   return (

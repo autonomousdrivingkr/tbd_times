@@ -63,6 +63,10 @@ export const PROMOTED_TOPIC_SLUGS: string[] = NAV_SECTIONS.filter(
   (s) => s.kind === "topic"
 ).map((s) => s.key);
 
+// 독립 섹션 대신 다른 섹션 안에 묶여 노출되는 토픽 slug
+// (헤더/홈의 보조 토픽 칩에서도 제외 — 해당 섹션 페이지에서만 보여준다)
+export const EMBEDDED_TOPIC_SLUGS: string[] = ["fed-rates", "bitcoin"];
+
 // (참고) category 섹션이 다루는 카테고리 목록
 export const SECTION_CATEGORIES: Category[] = NAV_SECTIONS.filter(
   (s) => s.kind === "category"
