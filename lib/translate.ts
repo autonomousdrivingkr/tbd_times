@@ -53,6 +53,14 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
+          // 이미 공개된 뉴스 원문을 그대로 옮기는 번역 작업이므로, 전쟁·사건사고 등
+          // 민감한 소재의 기사가 안전 필터에 막혀 배치 전체가 영어로 남는 것을 방지한다.
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+          ],
           generationConfig: {
             temperature: 0.2,
             responseMimeType: "application/json",
@@ -147,17 +155,39 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     batches.push(needIdx.slice(start, start + CHUNK));
   }
 
-  await Promise.all(
-    batches.map(async (idxs) => {
-      const payload = idxs.map((i) => ({ t: result[i].title, s: result[i].summary }));
-      const translated = await translateBatch(JSON.stringify(payload));
-      idxs.forEach((i, k) => {
-        const tr = translated[k];
-        result[i].titleKo = tr?.t?.trim() || result[i].title;
-        result[i].summaryKo = tr?.s?.trim() || result[i].summary;
-      });
-    })
-  );
+  await Promise.all(batches.map((idxs) => translateIndices(idxs, result)));
 
   return result;
+}
+
+/**
+ * 인덱스 묶음을 번역한다. 실패(개수 불일치 포함) 시 절반씩 나눠 재귀 재시도해
+ * 안전 필터 등으로 문제를 일으키는 항목만 격리한다 — 배치 안의 다른 기사들까지
+ * 통째로 영어로 남는 것을 막기 위함이다. 더 나눌 수 없는 단일 항목이 끝까지
+ * 실패하면 그 기사만 원문을 유지한다.
+ */
+async function translateIndices(idxs: number[], result: NewsItem[]): Promise<void> {
+  const payload = idxs.map((i) => ({ t: result[i].title, s: result[i].summary }));
+  const translated = await translateBatch(JSON.stringify(payload));
+
+  if (translated.length === idxs.length) {
+    idxs.forEach((i, k) => {
+      const tr = translated[k];
+      result[i].titleKo = tr?.t?.trim() || result[i].title;
+      result[i].summaryKo = tr?.s?.trim() || result[i].summary;
+    });
+    return;
+  }
+
+  if (idxs.length === 1) {
+    result[idxs[0]].titleKo = result[idxs[0]].title;
+    result[idxs[0]].summaryKo = result[idxs[0]].summary;
+    return;
+  }
+
+  const mid = Math.ceil(idxs.length / 2);
+  await Promise.all([
+    translateIndices(idxs.slice(0, mid), result),
+    translateIndices(idxs.slice(mid), result),
+  ]);
 }
