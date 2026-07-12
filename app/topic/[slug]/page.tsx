@@ -24,6 +24,9 @@ export async function generateMetadata({
   return {
     title: `${topic.label} 뉴스`,
     description: topic.description,
+    // 다른 카테고리 페이지와 기사가 대부분 겹치는 키워드 재분류 페이지라,
+    // 중복/저가치 콘텐츠로 비치지 않도록 검색 색인에서는 제외한다.
+    robots: { index: false, follow: true },
   };
 }
 

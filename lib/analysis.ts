@@ -44,6 +44,7 @@ async function callGemini(payloadJson: string): Promise<Analysis | null> {
     "- background: 이 뉴스를 이해하는 데 필요한 배경·맥락 1문단 (4~6문장). 업계 일반 상식 수준의 배경지식은 활용하되, 요약에 없는 구체적 수치·발언을 지어내지 마세요.",
     "- points: 독자가 기억할 핵심 포인트 3~4개. 각각 한 문장.",
     "- outlook: 이 소식이 왜 중요한지, 앞으로 지켜볼 지점 1문단 (3~5문장). 투자 권유·단정적 예측은 금지.",
+    "- 기사에 실질적인 근거가 부족하면 문장 수를 억지로 채우지 말고, 확인되지 않은 추측·상투적인 표현으로 메우지 마세요. 짧고 정직한 해설이 부풀린 해설보다 낫습니다.",
     "- 전체적으로 중립적이고 차분한 해설체를 사용하고, 기업명·인물명은 한국에서 통용되는 표기를 쓰세요.",
     "- JSON 으로만 응답하세요.",
     "",
@@ -115,11 +116,20 @@ const cachedAnalysis = unstable_cache(
   { revalidate: 60 * 60 * 24 * 7, tags: ["news"] }
 );
 
-/** 기사 하나에 대한 해설을 생성(캐시)해서 반환한다. 실패 시 null(요약만 표시). */
+// 해설을 생성할 최소 근거 분량. RSS 요약이 사실상 없는 기사까지 4단 해설
+// 템플릿을 억지로 채우면 근거 없는 내용을 지어내거나 모든 기사가 똑같이
+// 정형화된 "자동 생성물"처럼 보이는 위험이 있어, 이 경우는 아예 생성하지
+// 않고 요약만 보여준다(페이지의 폴백 렌더링이 이를 처리).
+const MIN_SOURCE_CHARS = 40;
+
+/** 기사 하나에 대한 해설을 생성(캐시)해서 반환한다. 근거가 부족하거나 실패 시 null(요약만 표시). */
 export async function getAnalysis(item: NewsItem): Promise<Analysis | null> {
+  const summary = item.summaryKo ?? item.summary;
+  if (summary.trim().length < MIN_SOURCE_CHARS) return null;
+
   const payload = JSON.stringify({
     title: item.titleKo ?? item.title,
-    summary: item.summaryKo ?? item.summary,
+    summary,
     source: item.source,
   });
   try {

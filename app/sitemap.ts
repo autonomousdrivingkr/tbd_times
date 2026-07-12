@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import { TOPICS } from "@/lib/topics";
 import { getNews } from "@/lib/rss";
 import { newsSlug } from "@/lib/slug";
 
@@ -21,12 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
   ];
 
-  const topics: MetadataRoute.Sitemap = TOPICS.map((t) => ({
-    url: `${base}/topic/${t.slug}`,
-    lastModified: now,
-    changeFrequency: "hourly" as const,
-    priority: 0.7,
-  }));
+  // /topic/[slug] 는 robots noindex 처리된 재분류 페이지라 사이트맵에서 제외한다.
 
   // 현재 피드에 살아 있는 브리핑 상세 페이지 (최신 60건)
   const news: MetadataRoute.Sitemap = (await getNews()).slice(0, 60).map((n) => ({
@@ -36,5 +30,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...main, ...topics, ...news];
+  return [...main, ...news];
 }

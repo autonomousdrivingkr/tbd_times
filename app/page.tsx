@@ -58,25 +58,39 @@ export default async function HomePage() {
 
   return (
     <div className="container-page py-8">
-      {/* 오늘의 브리핑 (데일리 칼럼으로 연결) */}
+      {/* 오늘의 브리핑 (데일리 칼럼으로 연결) — 홈 최상단에 자체 콘텐츠를 실제 본문과 함께 노출 */}
       <Link
         href="/briefing"
-        className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-accent-soft px-4 py-3 transition-opacity hover:opacity-90"
+        className="mb-8 block rounded-lg bg-accent-soft px-5 py-4 transition-opacity hover:opacity-90"
       >
-        <p className="min-w-0 text-sm font-semibold text-accent">
-          📰 오늘의 브리핑
-          {briefing && (
-            <span className="ml-2 font-serif font-bold text-ink">{briefing.headline}</span>
-          )}
-        </p>
-        <p className="text-xs text-ink-soft">
-          <span className="mr-3 hidden sm:inline">
-            마지막 업데이트{" "}
-            <span className="tabular-nums font-medium">{updatedAtLabel()}</span>
-          </span>
-          <span className="font-semibold text-accent">전문 보기 →</span>
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="min-w-0 text-xs font-bold uppercase tracking-widest text-accent">
+            📰 오늘의 브리핑 · Tibedra 편집팀
+          </p>
+          <p className="text-xs text-ink-soft">
+            <span className="mr-3 hidden sm:inline">
+              마지막 업데이트{" "}
+              <span className="tabular-nums font-medium">{updatedAtLabel()}</span>
+            </span>
+            <span className="font-semibold text-accent">전문 보기 →</span>
+          </p>
+        </div>
+        {briefing ? (
+          <>
+            <p className="mt-2 font-serif text-xl font-bold text-ink sm:text-2xl">
+              {briefing.headline}
+            </p>
+            <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-ink-soft line-clamp-2">
+              {briefing.intro}
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-ink-soft">오늘의 브리핑 칼럼을 준비하고 있습니다.</p>
+        )}
       </Link>
+
+      {/* 오늘의 용어 — 자체 콘텐츠를 아그리게이션 목록보다 먼저 노출 */}
+      <DailyTerms />
 
       {/* 보조 토픽 칩 */}
       {SECONDARY_TOPICS.length > 0 && (
@@ -134,7 +148,6 @@ export default async function HomePage() {
             items={tl(section.items)}
           />
           {idx === 0 && <AdRow slot={inlineAds[0]} />}
-          {idx === 1 && <DailyTerms />}
           {idx === 2 && <AdRow slot={inlineAds[1]} />}
         </Fragment>
       ))}

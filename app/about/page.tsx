@@ -66,6 +66,19 @@ export default function AboutPage() {
         </li>
       </ul>
 
+      <h2 className="mt-10 font-serif text-2xl font-bold">단순 수집과 다른 점</h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+        Tibedra는 헤드라인을 그러모아 나열하는 서비스가 아닙니다. 매일 아침{" "}
+        <a className="text-accent underline" href="/briefing">
+          데일리 브리핑 칼럼
+        </a>
+        을 통해 그날의 흐름을 편집진의 시각으로 재구성하고, 관심 있는 기사마다{" "}
+        <strong className="text-ink">배경·핵심 포인트·전망</strong>을 덧붙인 해설 페이지를
+        따로 발행합니다. 다만 원문 요약이 지나치게 짧아 실질적인 해설을 붙이기 어려운
+        기사는 해설을 억지로 만들지 않고 요약만 보여드립니다 — 모든 기사를 똑같은 틀에
+        맞추기보다, 덧붙일 내용이 있을 때만 해설을 답니다.
+      </p>
+
       <h2 className="mt-10 font-serif text-2xl font-bold">수집 매체</h2>
       <div className="mt-4 grid gap-6 sm:grid-cols-3">
         <div>
