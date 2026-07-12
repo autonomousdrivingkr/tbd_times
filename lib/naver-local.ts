@@ -75,7 +75,10 @@ const SEARCH_REVALIDATE_SECONDS = 60 * 60 * 24;
 async function searchRegion(region: string): Promise<Place[]> {
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return [];
+  if (!clientId || !clientSecret) {
+    console.error("[naver-local] missing NAVER_CLIENT_ID/SECRET env var");
+    return [];
+  }
 
   try {
     const url = `https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(
@@ -88,7 +91,11 @@ async function searchRegion(region: string): Promise<Place[]> {
       },
       next: { revalidate: SEARCH_REVALIDATE_SECONDS, tags: ["food"] },
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[naver-local] status ${res.status} for "${region}"`, body.slice(0, 300));
+      return [];
+    }
     const data = (await res.json()) as { items?: NaverLocalItem[] };
     const regionLabel = region.replace(/\s*맛집\s*$/, "");
 
@@ -112,8 +119,9 @@ async function searchRegion(region: string): Promise<Place[]> {
           link: it.link ?? "",
         };
       });
-  } catch {
-    // 개별 지역 검색 실패는 전체에 영향을 주지 않도록 조용히 무시
+  } catch (err) {
+    // 개별 지역 검색 실패는 전체에 영향을 주지 않도록 조용히 무시(로그는 남긴다)
+    console.error(`[naver-local] fetch failed for "${region}"`, err);
     return [];
   }
 }
