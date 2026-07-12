@@ -6,6 +6,12 @@ import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemi
 // - GEMINI_API_KEY 가 없으면 원문을 그대로 사용(기능 비활성).
 // - 동일한 배치는 unstable_cache 로 캐싱해 재생성마다 재호출하지 않는다.
 // - 요청 속도 제한은 gemini-throttle.ts 가 analysis.ts·briefing.ts 와 함께 전역으로 관리한다.
+// - 무료 티어 요청 수를 아끼기 위해, 같은 프로세스(빌드 1회 실행) 안에서는
+//   기사 링크 단위 메모이제이션을 둔다. 홈/카테고리/토픽 페이지가 같은 인기
+//   기사를 각자 번역 요청하는 중복을 없애는 것이 요청 수 절감에 가장 크다
+//   (배치 구성이 페이지마다 달라 unstable_cache 의 배치 단위 캐시만으로는
+//   이 중복을 못 잡는다).
+const processMemo = new Map<string, { t: string; s: string }>();
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -150,9 +156,14 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
   const needIdx: number[] = [];
 
   result.forEach((it, idx) => {
+    const memo = processMemo.get(it.link);
     if (it.ko || hasHangul(it.title)) {
       it.titleKo = it.title;
       it.summaryKo = it.summary;
+    } else if (memo) {
+      // 같은 빌드 안에서 다른 페이지가 이미 번역한 기사 — API 호출 없이 재사용
+      it.titleKo = memo.t;
+      it.summaryKo = memo.s;
     } else {
       needIdx.push(idx);
     }
@@ -169,8 +180,8 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     return result;
   }
 
-  // 30개 단위로 나눠 요청 수 자체를 최소화한다(요청 수가 곧 분당 한도 소비량).
-  const CHUNK = 30;
+  // 50개 단위로 나눠 요청 수 자체를 최소화한다(요청 수가 곧 분당 한도 소비량).
+  const CHUNK = 50;
   const batches: number[][] = [];
   for (let start = 0; start < needIdx.length; start += CHUNK) {
     batches.push(needIdx.slice(start, start + CHUNK));
@@ -182,8 +193,12 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
       const translated = await translateBatch(JSON.stringify(payload));
       idxs.forEach((i, k) => {
         const tr = translated[k];
-        result[i].titleKo = tr?.t?.trim() || result[i].title;
-        result[i].summaryKo = tr?.s?.trim() || result[i].summary;
+        const t = tr?.t?.trim() || result[i].title;
+        const s = tr?.s?.trim() || result[i].summary;
+        result[i].titleKo = t;
+        result[i].summaryKo = s;
+        // 성공한 번역만 기억한다(실패 시 원문 그대로라 재시도 여지를 남겨야 함).
+        if (tr) processMemo.set(result[i].link, { t, s });
       });
     })
   );
