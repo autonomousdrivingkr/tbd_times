@@ -1,9 +1,11 @@
 import { unstable_cache } from "next/cache";
 import type { NewsItem } from "./rss";
+import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
 
 // Google Gemini API 로 해외 기사 제목/요약을 한국어로 번역한다.
 // - GEMINI_API_KEY 가 없으면 원문을 그대로 사용(기능 비활성).
 // - 동일한 배치는 unstable_cache 로 캐싱해 재생성마다 재호출하지 않는다.
+// - 요청 속도 제한은 gemini-throttle.ts 가 analysis.ts·briefing.ts 와 함께 전역으로 관리한다.
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -43,6 +45,8 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
     "입력:",
     JSON.stringify(input),
   ].join("\n");
+
+  await reserveGeminiSlot();
 
   let res: Response;
   try {
@@ -88,6 +92,10 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     console.error(`[translate] status ${res.status}`, body.slice(0, 500));
+    if (res.status === 429) {
+      // 응답 메시지의 "retry in Ns" 힌트를 반영해 다음 호출들이 그만큼 더 기다리게 한다.
+      pushBackGeminiSlot(parseRetryDelayMs(body));
+    }
     throw new TranslateError(`gemini status ${res.status}`);
   }
   const data = await res.json();

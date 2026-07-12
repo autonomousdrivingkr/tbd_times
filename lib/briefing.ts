@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { getNews, type NewsItem } from "./rss";
 import { translateItems } from "./translate";
 import { newsPath } from "./slug";
+import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
 
 // 데일리 브리핑 칼럼: 오늘의 주요 뉴스를 3가지 테마로 묶어 해설하는 자체 에디토리얼.
 // KST 날짜 단위로 캐싱되어 하루 한 번만 생성된다 (아침 Cron 의 tag 무효화 시 재생성).
@@ -72,6 +73,8 @@ async function callGemini(
     JSON.stringify(items),
   ].join("\n");
 
+  await reserveGeminiSlot();
+
   let res: Response;
   try {
     res = await fetch(
@@ -114,7 +117,13 @@ async function callGemini(
   } catch {
     throw new BriefingError("gemini fetch failed");
   }
-  if (!res.ok) throw new BriefingError(`gemini status ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 429) {
+      const body = await res.text().catch(() => "");
+      pushBackGeminiSlot(parseRetryDelayMs(body));
+    }
+    throw new BriefingError(`gemini status ${res.status}`);
+  }
   const data = await res.json();
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new BriefingError("gemini empty response");

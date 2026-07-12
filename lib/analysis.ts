@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { NewsItem } from "./rss";
 import { GLOSSARY, GLOSSARY_GROUPS, type Term } from "./glossary";
+import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
 
 // 뉴스 브리핑 상세 페이지용 한국어 해설을 Gemini 로 생성한다.
 // - 원문 요약을 넘어서 배경·맥락·시사점을 덧붙이는 것이 목적 (자체 콘텐츠).
@@ -50,6 +51,8 @@ async function callGemini(payloadJson: string): Promise<Analysis | null> {
     JSON.stringify(input),
   ].join("\n");
 
+  await reserveGeminiSlot();
+
   let res: Response;
   try {
     res = await fetch(
@@ -81,7 +84,13 @@ async function callGemini(payloadJson: string): Promise<Analysis | null> {
   } catch {
     throw new AnalysisError("gemini fetch failed");
   }
-  if (!res.ok) throw new AnalysisError(`gemini status ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 429) {
+      const body = await res.text().catch(() => "");
+      pushBackGeminiSlot(parseRetryDelayMs(body));
+    }
+    throw new AnalysisError(`gemini status ${res.status}`);
+  }
   const data = await res.json();
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new AnalysisError("gemini empty response");
