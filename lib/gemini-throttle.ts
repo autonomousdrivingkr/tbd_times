@@ -5,8 +5,8 @@
 // translate.ts·analysis.ts·briefing.ts 가 이 모듈을 함께 사용해 앱 전체의
 // Gemini 호출을 하나의 큐로 직렬화한다.
 
-// 20회/분 한도에 여유를 두고 분당 약 16회로 제한한다.
-const MIN_INTERVAL_MS = 3800;
+// 20회/분 한도에 여유를 두고 분당 약 13회로 제한한다.
+const MIN_INTERVAL_MS = 4500;
 let slotChain: Promise<void> = Promise.resolve();
 let nextSlotAt = 0;
 

@@ -131,16 +131,14 @@ const cachedTranslate = unstable_cache(
 );
 
 // 실패한 배치는 이번 요청에서 원문을 유지하되 캐시에 저장하지 않는다(다음 재생성 때 재시도).
-// 일시적 오류를 한 번 더 즉시 재시도해 사용자에게 영어가 노출될 확률을 줄인다.
+// 요청 한 번으로 끝낸다: 재시도·분할 재시도는 429(요청 한도 초과) 상황에서
+// 오히려 요청 수를 늘려 한도 회복을 더 늦추므로, 실패는 그대로 다음 재생성에 맡긴다.
 async function translateBatch(payloadJson: string): Promise<Pair[]> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      return await cachedTranslate(payloadJson);
-    } catch {
-      /* 다음 시도 */
-    }
+  try {
+    return await cachedTranslate(payloadJson);
+  } catch {
+    return [];
   }
-  return [];
 }
 
 /**
@@ -171,47 +169,24 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     return result;
   }
 
-  // 배치가 크면 Gemini 응답이 느려/실패해 통째로 영어로 남을 위험이 크다.
-  // 20개 단위로 나눠 실패 영향 범위를 줄이고, 배치들을 병렬 처리한다.
-  const CHUNK = 20;
+  // 30개 단위로 나눠 요청 수 자체를 최소화한다(요청 수가 곧 분당 한도 소비량).
+  const CHUNK = 30;
   const batches: number[][] = [];
   for (let start = 0; start < needIdx.length; start += CHUNK) {
     batches.push(needIdx.slice(start, start + CHUNK));
   }
 
-  await Promise.all(batches.map((idxs) => translateIndices(idxs, result)));
+  await Promise.all(
+    batches.map(async (idxs) => {
+      const payload = idxs.map((i) => ({ t: result[i].title, s: result[i].summary }));
+      const translated = await translateBatch(JSON.stringify(payload));
+      idxs.forEach((i, k) => {
+        const tr = translated[k];
+        result[i].titleKo = tr?.t?.trim() || result[i].title;
+        result[i].summaryKo = tr?.s?.trim() || result[i].summary;
+      });
+    })
+  );
 
   return result;
-}
-
-/**
- * 인덱스 묶음을 번역한다. 실패(개수 불일치 포함) 시 절반씩 나눠 재귀 재시도해
- * 안전 필터 등으로 문제를 일으키는 항목만 격리한다 — 배치 안의 다른 기사들까지
- * 통째로 영어로 남는 것을 막기 위함이다. 더 나눌 수 없는 단일 항목이 끝까지
- * 실패하면 그 기사만 원문을 유지한다.
- */
-async function translateIndices(idxs: number[], result: NewsItem[]): Promise<void> {
-  const payload = idxs.map((i) => ({ t: result[i].title, s: result[i].summary }));
-  const translated = await translateBatch(JSON.stringify(payload));
-
-  if (translated.length === idxs.length) {
-    idxs.forEach((i, k) => {
-      const tr = translated[k];
-      result[i].titleKo = tr?.t?.trim() || result[i].title;
-      result[i].summaryKo = tr?.s?.trim() || result[i].summary;
-    });
-    return;
-  }
-
-  if (idxs.length === 1) {
-    result[idxs[0]].titleKo = result[idxs[0]].title;
-    result[idxs[0]].summaryKo = result[idxs[0]].summary;
-    return;
-  }
-
-  const mid = Math.ceil(idxs.length / 2);
-  await Promise.all([
-    translateIndices(idxs.slice(0, mid), result),
-    translateIndices(idxs.slice(mid), result),
-  ]);
 }
