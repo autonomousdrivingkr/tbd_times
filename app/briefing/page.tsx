@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDailyBriefing } from "@/lib/briefing";
+import { listArchivedDates } from "@/lib/briefing-archive";
 import { getNews } from "@/lib/rss";
 import { translateItems } from "@/lib/translate";
-import { todayLabel } from "@/lib/format";
+import { todayLabel, dateKeyLabel } from "@/lib/format";
 import { newsPath } from "@/lib/slug";
 import AdSlot from "@/components/AdSlot";
+import BriefingArticle from "@/components/BriefingArticle";
 
 // 홈과 동일하게 30분 ISR (칼럼 자체는 날짜 단위로 캐싱되어 하루 한 번 생성).
 export const revalidate = 1800;
@@ -25,10 +27,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BriefingPage() {
-  const briefing = await getDailyBriefing();
+  const [briefing, archiveDates] = await Promise.all([
+    getDailyBriefing(),
+    listArchivedDates(14),
+  ]);
 
   // 칼럼 생성 실패 시에도 페이지가 비지 않도록 최신 헤드라인으로 대체
   const fallback = briefing ? [] : await translateItems((await getNews()).slice(0, 10));
+
+  // 아카이브 목록에서 오늘 날짜는 제외(바로 위에 이미 전문이 있음)
+  const pastDates = archiveDates.filter((d) => d !== briefing?.date);
 
   const jsonLd = briefing
     ? {
@@ -65,35 +73,7 @@ export default async function BriefingPage() {
       </header>
 
       {briefing ? (
-        <div className="mt-8 space-y-8 text-[16px] leading-relaxed">
-          <p className="font-medium text-ink">{briefing.intro}</p>
-
-          {briefing.sections.map((s, idx) => (
-            <section key={s.title}>
-              <h2 className="mb-2 font-serif text-xl font-bold">
-                <span className="mr-2 text-accent">{idx + 1}.</span>
-                {s.title}
-              </h2>
-              <p className="text-ink-soft">{s.body}</p>
-              {s.items.length > 0 && (
-                <ul className="mt-3 space-y-1.5">
-                  {s.items.map((ref) => (
-                    <li key={ref.path} className="text-sm">
-                      <Link href={ref.path} className="text-accent hover:underline">
-                        {ref.title}
-                      </Link>
-                      <span className="ml-1.5 text-xs text-muted">{ref.source}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-
-          <p className="rounded-lg bg-accent-soft p-4 text-[15px] text-ink-soft">
-            {briefing.closing}
-          </p>
-        </div>
+        <BriefingArticle briefing={briefing} />
       ) : (
         <div className="mt-8">
           <p className="text-[15px] leading-relaxed text-ink-soft">
@@ -120,7 +100,26 @@ export default async function BriefingPage() {
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE} />
       </div>
 
-      <p className="text-sm text-ink-soft">
+      {/* 지난 브리핑 아카이브 */}
+      {pastDates.length > 0 && (
+        <section className="mt-10 border-t border-line pt-6">
+          <h2 className="mb-4 font-serif text-lg font-bold">지난 브리핑</h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {pastDates.map((d) => (
+              <li key={d}>
+                <Link
+                  href={`/briefing/${d}`}
+                  className="block rounded-md border border-line px-3 py-2 text-sm text-ink-soft hover:border-accent hover:text-accent"
+                >
+                  {dateKeyLabel(d)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <p className="mt-8 text-sm text-ink-soft">
         낯선 용어가 있었나요?{" "}
         <Link href="/glossary" className="text-accent hover:underline">
           용어사전

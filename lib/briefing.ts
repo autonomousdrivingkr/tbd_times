@@ -3,6 +3,7 @@ import { getNews, type NewsItem } from "./rss";
 import { translateItems } from "./translate";
 import { newsPath } from "./slug";
 import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { archiveBriefing, getArchivedBriefing } from "./briefing-archive";
 
 // 데일리 브리핑 칼럼: 오늘의 주요 뉴스를 3가지 테마로 묶어 해설하는 자체 에디토리얼.
 // KST 날짜 단위로 캐싱되어 하루 한 번만 생성된다 (아침 Cron 의 tag 무효화 시 재생성).
@@ -161,7 +162,7 @@ async function buildBriefing(dateKey: string): Promise<DailyBriefing | null> {
     return { title: it.titleKo ?? it.title, path: newsPath(it), source: it.source };
   };
 
-  return {
+  const briefing: DailyBriefing = {
     date: dateKey,
     headline: raw.headline,
     intro: raw.intro,
@@ -172,6 +173,11 @@ async function buildBriefing(dateKey: string): Promise<DailyBriefing | null> {
     })),
     closing: raw.closing,
   };
+
+  // 새로 생성됐을 때(캐시 미스일 때)만 실행되므로 하루 한 번만 아카이브에 기록된다.
+  await archiveBriefing(briefing);
+
+  return briefing;
 }
 
 // 날짜 키 단위 캐싱: 같은 날은 한 번만 생성. 아침 Cron(tag "news")이 무효화하면
@@ -189,4 +195,14 @@ export async function getDailyBriefing(): Promise<DailyBriefing | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * 특정 날짜(YYYY-MM-DD)의 브리핑을 반환한다.
+ * 오늘 날짜면 실시간 캐시 경로를, 과거 날짜면 영구 아카이브를 사용한다
+ * (과거 기사는 RSS 피드에서 이미 사라져 재생성이 불가능하기 때문).
+ */
+export async function getBriefingByDate(dateKey: string): Promise<DailyBriefing | null> {
+  if (dateKey === kstDateKey()) return getDailyBriefing();
+  return getArchivedBriefing(dateKey);
 }

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getNews } from "@/lib/rss";
 import { newsSlug } from "@/lib/slug";
+import { listArchivedDates } from "@/lib/briefing-archive";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -22,6 +23,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // /topic/[slug] 는 robots noindex 처리된 재분류 페이지라 사이트맵에서 제외한다.
 
+  // 데일리 브리핑 아카이브 (영구 보관된 과거 칼럼)
+  const briefingArchive: MetadataRoute.Sitemap = (await listArchivedDates(60)).map((date) => ({
+    url: `${base}/briefing/${date}`,
+    lastModified: new Date(`${date}T06:00:00+09:00`),
+    changeFrequency: "never" as const,
+    priority: 0.5,
+  }));
+
   // 현재 피드에 살아 있는 브리핑 상세 페이지 (최신 60건)
   const news: MetadataRoute.Sitemap = (await getNews()).slice(0, 60).map((n) => ({
     url: `${base}/news/${newsSlug(n.link)}`,
@@ -30,5 +39,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...main, ...news];
+  return [...main, ...briefingArchive, ...news];
 }

@@ -53,6 +53,19 @@ export function updatedAtLabel(): string {
   }).format(new Date());
 }
 
+/** "YYYY-MM-DD" 날짜 키를 "OOOO년 O월 O일 (요일)" 형태로 포맷 */
+export function dateKeyLabel(dateKey: string): string {
+  const t = Date.parse(`${dateKey}T00:00:00+09:00`);
+  if (Number.isNaN(t)) return dateKey;
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KST,
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(t);
+}
+
 /** ISO 문자열을 KST 시:분으로 포맷 (없으면 빈 문자열) */
 export function timeLabel(iso: string | null): string {
   if (!iso) return "";
