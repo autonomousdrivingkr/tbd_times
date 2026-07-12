@@ -80,18 +80,34 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
         signal: AbortSignal.timeout(20000),
       }
     );
-  } catch {
+  } catch (err) {
     // 네트워크 오류·타임아웃 → 재시도 대상
+    console.error("[translate] fetch failed", err);
     throw new TranslateError("gemini fetch failed");
   }
-  if (!res.ok) throw new TranslateError(`gemini status ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`[translate] status ${res.status}`, body.slice(0, 500));
+    throw new TranslateError(`gemini status ${res.status}`);
+  }
   const data = await res.json();
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new TranslateError("gemini empty response");
+  if (!text) {
+    console.error(
+      "[translate] empty response",
+      JSON.stringify({
+        finishReason: data?.candidates?.[0]?.finishReason,
+        promptFeedback: data?.promptFeedback,
+        candidateCount: data?.candidates?.length,
+      })
+    );
+    throw new TranslateError("gemini empty response");
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
+    console.error("[translate] bad json", text.slice(0, 300));
     throw new TranslateError("gemini bad json");
   }
   if (!Array.isArray(parsed)) throw new TranslateError("gemini bad shape");
