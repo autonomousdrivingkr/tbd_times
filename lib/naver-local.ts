@@ -70,6 +70,37 @@ function lastCategorySegment(category: string): string {
   return parts[parts.length - 1] || category;
 }
 
+// 네이버 지역 검색은 맛집을 "음식점>양식" 처럼 반환하기도 하지만,
+// "한식>육류,고기요리", "뷔페>해산물뷔페" 처럼 상위 분류를 음식 종류로 바로
+// 반환하는 경우가 더 많다. "음식점" 포함 여부만 보면 절반 가까이가 누락되므로
+// 음식 관련 상위 분류(첫 구간)를 폭넓게 허용한다.
+const FOOD_TOP_CATEGORIES = new Set<string>([
+  "음식점",
+  "한식",
+  "중식",
+  "일식",
+  "양식",
+  "분식",
+  "아시아음식",
+  "퓨전요리",
+  "세계음식",
+  "치킨",
+  "피자",
+  "패스트푸드",
+  "카페",
+  "카페,디저트",
+  "제과,베이커리",
+  "뷔페",
+  "술집",
+  "호프,요리주점",
+  "바",
+]);
+
+function isFoodCategory(category: string): boolean {
+  const top = category.split(">")[0]?.trim() ?? "";
+  return FOOD_TOP_CATEGORIES.has(top);
+}
+
 const SEARCH_REVALIDATE_SECONDS = 60 * 60 * 24;
 
 async function searchRegion(region: string): Promise<Place[]> {
@@ -100,7 +131,7 @@ async function searchRegion(region: string): Promise<Place[]> {
     const regionLabel = region.replace(/\s*맛집\s*$/, "");
 
     return (data.items ?? [])
-      .filter((it) => it.title && it.category?.includes("음식점"))
+      .filter((it) => it.title && isFoodCategory(it.category ?? ""))
       .map((it): Place => {
         const name = cleanText(it.title!);
         const roadAddress = it.roadAddress ?? "";
