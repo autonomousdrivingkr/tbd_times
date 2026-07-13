@@ -137,8 +137,20 @@ function dedupe(places: Place[]): Place[] {
   return out;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 지역 요청 사이 최소 간격. 16개를 한꺼번에 병렬 호출하면 네이버 API 의
+// 순간 요청 제한(rate limit exceeded)에 걸려 대부분 실패하는 것을 확인했다.
+const REQUEST_INTERVAL_MS = 150;
+
 /** 지역 목록을 순회해 전국 맛집 정보를 모아 반환한다. */
 export async function getRestaurants(): Promise<Place[]> {
-  const results = await Promise.all(REGIONS.map(searchRegion));
+  const results: Place[][] = [];
+  for (const region of REGIONS) {
+    results.push(await searchRegion(region));
+    await sleep(REQUEST_INTERVAL_MS);
+  }
   return dedupe(results.flat());
 }
