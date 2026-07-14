@@ -43,6 +43,13 @@ export default function AboutPage() {
       </p>
       <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-soft">
         <li>
+          <a className="text-accent underline" href="/blog">
+            블로그
+          </a>{" "}
+          — 편집장이 직접 쓰는 개인 노트. AI·기술·투자·여행에 대한 생각과 경험을 사람이 직접
+          기록합니다(자동 수집·번역이 아님).
+        </li>
+        <li>
           <a className="text-accent underline" href="/briefing">
             오늘의 브리핑
           </a>{" "}

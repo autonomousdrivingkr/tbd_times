@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getNews } from "@/lib/rss";
 import { newsSlug } from "@/lib/slug";
 import { listArchivedDates } from "@/lib/briefing-archive";
+import { getAllPosts } from "@/lib/blog";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -10,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const main: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: "hourly", priority: 1 },
     { url: `${base}/briefing`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${base}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${base}/ai`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/investment`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/travel`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
@@ -40,5 +42,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...main, ...briefingArchive, ...news];
+  // 개인 블로그 글 (사람이 직접 쓴 자체 콘텐츠)
+  const blog: MetadataRoute.Sitemap = getAllPosts().map((p) => ({
+    url: `${base}/blog/${p.slug}`,
+    lastModified: new Date(`${p.date}T09:00:00+09:00`),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  return [...main, ...blog, ...briefingArchive, ...news];
 }

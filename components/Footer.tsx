@@ -15,6 +15,7 @@ export default function Footer() {
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <Link href="/briefing" className="text-ink-soft hover:text-accent">오늘의 브리핑</Link>
+            <Link href="/blog" className="text-ink-soft hover:text-accent">블로그</Link>
             <Link href="/ai" className="text-ink-soft hover:text-accent">AI</Link>
             <Link href="/topic/semiconductor" className="text-ink-soft hover:text-accent">반도체</Link>
             <Link href="/investment" className="text-ink-soft hover:text-accent">투자</Link>
