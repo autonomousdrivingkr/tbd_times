@@ -1,4 +1,4 @@
-import { put, list } from "@vercel/blob";
+import { put, get } from "@vercel/blob";
 import { hasBlobAccess } from "./blob-env";
 
 // 런타임에 생성되는 블로그 글(수동 발행 · 매일 자동 초안)을 Vercel Blob 에 저장한다.
@@ -35,20 +35,19 @@ export function hasBlobStore(): boolean {
 
 /**
  * 저장된 글 전체를 읽어온다.
- * @param fresh true 면 캐시를 우회(관리자·쓰기 직후 최신값 필요 시). false 면 태그 캐시 사용.
+ * 스토어는 private 접근이라 get() 이 자체적으로 인증(고정 토큰 또는 OIDC)을 처리한다.
+ * 파일 크기가 작고 요청량도 적은 개인 블로그 규모라, 발행 직후 CDN 캐시로 인한
+ * 불일치를 피하기 위해 항상 origin 에서 최신 값을 읽는다(useCache: false).
+ * @param fresh 과거 호출부와의 호환을 위해 남겨둔 파라미터(현재는 동작에 영향 없음).
  */
 export async function readStore(fresh = false): Promise<StoredPost[]> {
+  void fresh;
   if (!hasBlobStore()) return [];
   try {
-    const { blobs } = await list({ prefix: STORE_PATH, limit: 1 });
-    const blob = blobs[0];
-    if (!blob) return [];
-    const res = await fetch(blob.url, {
-      cache: fresh ? "no-store" : undefined,
-      next: fresh ? undefined : { tags: ["blog"], revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    const data = (await res.json()) as StoredPost[];
+    const result = await get(STORE_PATH, { access: "private", useCache: false });
+    if (!result || result.statusCode !== 200) return [];
+    const text = await new Response(result.stream).text();
+    const data = JSON.parse(text) as StoredPost[];
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
@@ -57,7 +56,7 @@ export async function readStore(fresh = false): Promise<StoredPost[]> {
 
 async function writeStore(posts: StoredPost[]): Promise<void> {
   await put(STORE_PATH, JSON.stringify(posts), {
-    access: "public",
+    access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
     allowOverwrite: true,

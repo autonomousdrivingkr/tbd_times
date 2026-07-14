@@ -1,4 +1,4 @@
-import { put, list } from "@vercel/blob";
+import { put, list, get } from "@vercel/blob";
 import type { DailyBriefing } from "./briefing";
 import { hasBlobAccess } from "./blob-env";
 
@@ -23,7 +23,7 @@ export async function archiveBriefing(briefing: DailyBriefing): Promise<void> {
   if (!hasBlobToken()) return;
   try {
     await put(blobPath(briefing.date), JSON.stringify(briefing), {
-      access: "public",
+      access: "private",
       contentType: "application/json",
       addRandomSuffix: false,
       allowOverwrite: true,
@@ -38,12 +38,10 @@ export async function archiveBriefing(briefing: DailyBriefing): Promise<void> {
 export async function getArchivedBriefing(dateKey: string): Promise<DailyBriefing | null> {
   if (!hasBlobToken()) return null;
   try {
-    const { blobs } = await list({ prefix: blobPath(dateKey), limit: 1 });
-    const blob = blobs[0];
-    if (!blob) return null;
-    const res = await fetch(blob.url, { next: { revalidate: 60 * 60 * 24 } });
-    if (!res.ok) return null;
-    return (await res.json()) as DailyBriefing;
+    const result = await get(blobPath(dateKey), { access: "private" });
+    if (!result || result.statusCode !== 200) return null;
+    const text = await new Response(result.stream).text();
+    return JSON.parse(text) as DailyBriefing;
   } catch {
     return null;
   }
