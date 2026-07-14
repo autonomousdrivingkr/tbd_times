@@ -1,11 +1,12 @@
 import { put, list } from "@vercel/blob";
 import type { DailyBriefing } from "./briefing";
+import { hasBlobAccess } from "./blob-env";
 
 // 데일리 브리핑 영구 아카이브 (Vercel Blob).
 // - unstable_cache 는 TTL/태그로 무효화될 수 있어 "진짜 과거 기록"을 보장하지 못한다.
 //   (원본 RSS 기사가 피드에서 빠지면 같은 날짜를 재생성해도 다른 내용이 나옴)
 // - 생성된 브리핑을 이곳에 한 번 더 저장해, 몇 달 뒤에도 그날 그 글이 그대로 남도록 한다.
-// - BLOB_READ_WRITE_TOKEN 이 없으면(스토리지 미연결) 조용히 비활성화된다.
+// - Blob 접근 수단(고정 토큰 또는 OIDC)이 전혀 없으면(스토리지 미연결) 조용히 비활성화된다.
 
 const PREFIX = "briefings/";
 
@@ -14,7 +15,7 @@ function blobPath(dateKey: string): string {
 }
 
 function hasBlobToken(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return hasBlobAccess();
 }
 
 /** 생성된 브리핑을 아카이브에 저장한다. 실패해도 무시(아카이브는 부가 기능). */

@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllPosts, postDateLabel } from "@/lib/blog";
 
+// Blob 에 새로 발행되는 글(수동 발행·자동 초안 승인)이 재배포 없이 반영되도록 ISR.
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "블로그",
   description:
     "Tibedra 편집장이 직접 쓰는 개인 블로그 — AI·기술·투자·여행에 대한 생각과 경험을 기록합니다.",
 };
 
-export default function BlogPage() {
-  const posts = getAllPosts();
+export default async function BlogPage() {
+  const posts = await getAllPosts();
 
   return (
     <div className="container-page max-w-3xl py-12">

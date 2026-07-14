@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllPosts, getPostBySlug, getPostSlugs, postDateLabel } from "@/lib/blog";
+import { getAllPosts, getPostBySlug, getFileSlugs, postDateLabel } from "@/lib/blog";
 import AdSlot from "@/components/AdSlot";
 
-// 블로그 글은 저장소의 마크다운 파일 기반이라 빌드 시 전부 정적 생성한다.
-export const dynamicParams = false;
+// 파일 기반 글은 빌드 시 정적 생성하되, Blob 에서 관리자 발행된 글도 재배포 없이
+// 바로 열람 가능해야 하므로 dynamicParams 를 허용하고 ISR 로 갱신한다.
+export const dynamicParams = true;
+export const revalidate = 300;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export function generateStaticParams() {
-  return getPostSlugs().map((slug) => ({ slug }));
+  return getFileSlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -19,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) return { title: "글을 찾을 수 없습니다", robots: { index: false } };
   return {
     title: post.title,
@@ -42,10 +44,10 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const related = getAllPosts()
+  const related = (await getAllPosts())
     .filter((p) => p.slug !== post.slug)
     .slice(0, 3);
 
@@ -92,6 +94,11 @@ export default async function BlogPostPage({
           <p className="mt-3 text-[15px] leading-relaxed text-muted">{post.summary}</p>
         )}
         <p className="mt-4 text-sm font-medium text-ink-soft">글 · {post.author}</p>
+        {post.aiGenerated && (
+          <p className="mt-2 text-xs text-muted">
+            AI가 그날의 뉴스를 바탕으로 제안한 초안을 편집장이 검토·수정해 발행했습니다.
+          </p>
+        )}
       </header>
 
       <article

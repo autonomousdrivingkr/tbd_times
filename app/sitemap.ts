@@ -42,8 +42,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // 개인 블로그 글 (사람이 직접 쓴 자체 콘텐츠)
-  const blog: MetadataRoute.Sitemap = getAllPosts().map((p) => ({
+  // 개인 블로그 글 (사람이 직접 쓴 자체 콘텐츠 + 관리자 발행 Blob 글)
+  const blog: MetadataRoute.Sitemap = (await getAllPosts()).map((p) => ({
     url: `${base}/blog/${p.slug}`,
     lastModified: new Date(`${p.date}T09:00:00+09:00`),
     changeFrequency: "monthly" as const,

@@ -46,8 +46,9 @@ export default function AboutPage() {
           <a className="text-accent underline" href="/blog">
             블로그
           </a>{" "}
-          — 편집장이 직접 쓰는 개인 노트. AI·기술·투자·여행에 대한 생각과 경험을 사람이 직접
-          기록합니다(자동 수집·번역이 아님).
+          — 편집장이 직접 쓰는 개인 노트. AI·기술·투자·여행에 대한 생각과 경험을 기록합니다.
+          일부 글은 AI가 그날의 뉴스를 바탕으로 초안을 제안하고, 편집장이 검토·수정을 거쳐
+          발행합니다 — 초안이 그대로 자동 게시되는 경우는 없습니다.
         </li>
         <li>
           <a className="text-accent underline" href="/briefing">
