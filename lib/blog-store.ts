@@ -45,11 +45,19 @@ export async function readStore(fresh = false): Promise<StoredPost[]> {
   if (!hasBlobStore()) return [];
   try {
     const result = await get(STORE_PATH, { access: "private", useCache: false });
-    if (!result || result.statusCode !== 200) return [];
+    if (!result) {
+      console.error("[blog-store] get() returned null for", STORE_PATH);
+      return [];
+    }
+    if (result.statusCode !== 200) {
+      console.error("[blog-store] unexpected statusCode", result.statusCode);
+      return [];
+    }
     const text = await new Response(result.stream).text();
     const data = JSON.parse(text) as StoredPost[];
     return Array.isArray(data) ? data : [];
-  } catch {
+  } catch (err) {
+    console.error("[blog-store] readStore failed", err);
     return [];
   }
 }
