@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { NewsItem } from "./rss";
 import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { isBuildPhase } from "./build-phase";
 
 // Google Gemini API 로 해외 기사 제목/요약을 한국어로 번역한다.
 // - GEMINI_API_KEY 가 없으면 원문을 그대로 사용(기능 비활성).
@@ -170,6 +171,16 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
   });
 
   if (needIdx.length === 0) return result;
+
+  // 빌드(next build) 단계에서는 Gemini 를 호출하지 않고 원문을 유지한다.
+  // 아무것도 캐시하지 않으므로, 런타임 ISR 재생성 때 정상적으로 번역된다.
+  if (isBuildPhase()) {
+    needIdx.forEach((i) => {
+      result[i].titleKo = result[i].title;
+      result[i].summaryKo = result[i].summary;
+    });
+    return result;
+  }
 
   // API 키가 없으면 원문 유지(번역 없이 표시)
   if (!process.env.GEMINI_API_KEY) {

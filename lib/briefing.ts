@@ -4,6 +4,7 @@ import { translateItems } from "./translate";
 import { newsPath } from "./slug";
 import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
 import { archiveBriefing, getArchivedBriefing } from "./briefing-archive";
+import { isBuildPhase } from "./build-phase";
 
 // 데일리 브리핑 칼럼: 오늘의 주요 뉴스를 3가지 테마로 묶어 해설하는 자체 에디토리얼.
 // KST 날짜 단위로 캐싱되어 하루 한 번만 생성된다 (아침 Cron 의 tag 무효화 시 재생성).
@@ -190,6 +191,9 @@ const cachedBriefing = unstable_cache(buildBriefing, ["daily-briefing-v2"], {
 
 /** 오늘(KST)의 데일리 브리핑을 반환한다. 생성 실패 시 null(홈/브리핑 페이지는 대체 UI). */
 export async function getDailyBriefing(): Promise<DailyBriefing | null> {
+  // 빌드 단계에서는 생성하지 않는다(캐시도 남기지 않음). 홈/브리핑 페이지는 대체 UI 를
+  // 보여주고, 런타임 ISR 재생성 때 Gemini 로 실제 브리핑을 생성한다.
+  if (isBuildPhase()) return null;
   try {
     return await cachedBriefing(kstDateKey());
   } catch {

@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { NewsItem } from "./rss";
 import { GLOSSARY, GLOSSARY_GROUPS, type Term } from "./glossary";
 import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { isBuildPhase } from "./build-phase";
 
 // 뉴스 브리핑 상세 페이지용 한국어 해설을 Gemini 로 생성한다.
 // - 원문 요약을 넘어서 배경·맥락·시사점을 덧붙이는 것이 목적 (자체 콘텐츠).
@@ -126,6 +127,9 @@ const MIN_SOURCE_CHARS = 40;
 export async function getAnalysis(item: NewsItem): Promise<Analysis | null> {
   const summary = item.summaryKo ?? item.summary;
   if (summary.trim().length < MIN_SOURCE_CHARS) return null;
+
+  // 빌드 단계에서는 해설을 생성하지 않는다(캐시도 남기지 않음) → 런타임에서 생성.
+  if (isBuildPhase()) return null;
 
   const payload = JSON.stringify({
     title: item.titleKo ?? item.title,
