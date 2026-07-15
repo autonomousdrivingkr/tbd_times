@@ -71,6 +71,7 @@ async function handle(req: NextRequest) {
     category: draft.category,
     tags: draft.tags,
     markdown: draft.markdown,
+    image: draft.image,
     status: "draft",
     createdAt: new Date().toISOString(),
     aiGenerated: true,

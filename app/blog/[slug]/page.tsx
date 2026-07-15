@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug, getFileSlugs, postDateLabel } from "@/lib/blog";
 import AdSlot from "@/components/AdSlot";
+import Thumb from "@/components/Thumb";
 
 // 파일 기반 글은 빌드 시 정적 생성하되, Blob 에서 관리자 발행된 글도 재배포 없이
 // 바로 열람 가능해야 하므로 dynamicParams 를 허용하고 ISR 로 갱신한다.
@@ -34,6 +35,7 @@ export async function generateMetadata({
       url: `${siteUrl}/blog/${slug}`,
       publishedTime: post.date,
       authors: [post.author],
+      images: post.image ? [{ url: post.image }] : undefined,
     },
   };
 }
@@ -56,6 +58,7 @@ export default async function BlogPostPage({
     "@type": "BlogPosting",
     headline: post.title,
     description: post.summary,
+    image: post.image ? [post.image] : undefined,
     datePublished: post.date,
     dateModified: post.date,
     inLanguage: "ko-KR",
@@ -100,6 +103,14 @@ export default async function BlogPostPage({
           </p>
         )}
       </header>
+
+      {post.image && (
+        <Thumb
+          src={post.image}
+          alt={post.title}
+          className="mt-6 aspect-[16/9] w-full rounded-lg"
+        />
+      )}
 
       <article
         className="post-body mt-8"

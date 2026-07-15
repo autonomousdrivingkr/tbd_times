@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { StoredPost } from "@/lib/blog-store";
+import Thumb from "@/components/Thumb";
 
 export default function PostList({ posts }: { posts: StoredPost[] }) {
   const router = useRouter();
@@ -56,18 +57,27 @@ export default function PostList({ posts }: { posts: StoredPost[] }) {
     const busy = busySlug === post.slug;
     return (
       <li className="flex flex-wrap items-center justify-between gap-3 py-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs text-muted">
-            {post.aiGenerated && (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent">
-                AI 초안
-              </span>
-            )}
-            <span>{post.date}</span>
-            {post.category && <span>· {post.category}</span>}
+        <div className="flex min-w-0 items-center gap-3">
+          {post.image && (
+            <Thumb
+              src={post.image}
+              alt={post.title}
+              className="h-12 w-16 shrink-0 rounded-md"
+            />
+          )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-xs text-muted">
+              {post.aiGenerated && (
+                <span className="rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent">
+                  AI 초안
+                </span>
+              )}
+              <span>{post.date}</span>
+              {post.category && <span>· {post.category}</span>}
+            </div>
+            <p className="mt-1 truncate font-medium text-ink">{post.title}</p>
+            <p className="truncate text-xs text-muted">/blog/{post.slug}</p>
           </div>
-          <p className="mt-1 truncate font-medium text-ink">{post.title}</p>
-          <p className="truncate text-xs text-muted">/blog/{post.slug}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {post.status === "published" && (

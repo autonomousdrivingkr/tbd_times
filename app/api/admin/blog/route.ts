@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     category: typeof body.category === "string" && body.category.trim() ? body.category.trim() : undefined,
     tags: Array.isArray(body.tags) ? body.tags.map(String).filter(Boolean) : [],
     markdown,
+    image: typeof body.image === "string" && body.image.trim() ? body.image.trim() : undefined,
     status,
     createdAt: new Date().toISOString(),
     aiGenerated: false,

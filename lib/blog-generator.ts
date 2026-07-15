@@ -1,5 +1,6 @@
 import { getNews } from "./rss";
 import { translateItems } from "./translate";
+import { resolveImages } from "./images";
 import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
 
 // 매일 자동으로 "편집장 노트" 성격의 블로그 초안을 생성한다.
@@ -17,6 +18,18 @@ export interface GeneratedDraft {
   tags: string[];
   /** 마크다운 본문 */
   markdown: string;
+  /** 대표 이미지 URL. 참고한 기사 중 하나의 이미지를 재사용하며, 마땅한 게 없으면 undefined. */
+  image?: string;
+}
+
+// Gemini 원시 응답 형태. imageRefIndex 는 참고 기사 중 대표 이미지로 쓸 하나를 가리킨다.
+interface RawDraft {
+  title: string;
+  summary: string;
+  category: string;
+  tags: string[];
+  markdown: string;
+  imageRefIndex?: number;
 }
 
 class BlogGenError extends Error {}
@@ -27,7 +40,8 @@ export async function generateDailyBlogDraft(): Promise<GeneratedDraft | null> {
 
   const all = await getNews();
   if (all.length === 0) return null;
-  const top = await translateItems(all.slice(0, 20));
+  // 대표 이미지 선정을 위해 썸네일이 없는 기사는 og:image 로 채워둔다.
+  const top = await resolveImages(await translateItems(all.slice(0, 20)));
 
   const payload = top.map((n, i) => ({
     i,
@@ -50,6 +64,7 @@ export async function generateDailyBlogDraft(): Promise<GeneratedDraft | null> {
     "- category: 이 글과 가장 관련 높은 분야 하나를 'AI', '투자', '여행' 중에서 고르세요.",
     "- tags: 3~5개의 짧은 키워드 배열.",
     "- markdown: 마크다운 본문. ## 소제목 2~4개로 구성하고 전체 700~1200자 분량으로 작성하세요.",
+    "- imageRefIndex: 이 글의 대표 이미지로 쓰기에 가장 잘 어울리는 기사 하나의 인덱스(i).",
     "- 기사 목록에 없는 사실·수치를 지어내지 마세요.",
     "- 특정 종목·자산에 대한 투자 권유나 단정적 가격 예측은 금지합니다.",
     "- JSON 으로만 응답하세요.",
@@ -80,8 +95,9 @@ export async function generateDailyBlogDraft(): Promise<GeneratedDraft | null> {
                 category: { type: "STRING" },
                 tags: { type: "ARRAY", items: { type: "STRING" } },
                 markdown: { type: "STRING" },
+                imageRefIndex: { type: "INTEGER" },
               },
-              required: ["title", "summary", "category", "tags", "markdown"],
+              required: ["title", "summary", "category", "tags", "markdown", "imageRefIndex"],
             },
           },
         }),
@@ -102,12 +118,19 @@ export async function generateDailyBlogDraft(): Promise<GeneratedDraft | null> {
   const data = await res.json();
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new BlogGenError("gemini empty response");
-  let parsed: GeneratedDraft;
+  let parsed: RawDraft;
   try {
-    parsed = JSON.parse(text) as GeneratedDraft;
+    parsed = JSON.parse(text) as RawDraft;
   } catch {
     throw new BlogGenError("gemini bad json");
   }
   if (!parsed.title || !parsed.markdown) throw new BlogGenError("gemini incomplete");
-  return parsed;
+
+  // 모델이 고른 기사에 이미지가 없으면(썸네일 조회 실패 등) 목록에서 이미지가
+  // 있는 첫 기사로 대체한다. 하나도 없으면 이미지 없이 발행(폴백 UI가 처리).
+  const picked = typeof parsed.imageRefIndex === "number" ? top[parsed.imageRefIndex] : undefined;
+  const image = picked?.image ?? top.find((n) => n.image)?.image ?? undefined;
+
+  const { imageRefIndex: _imageRefIndex, ...rest } = parsed;
+  return { ...rest, image };
 }

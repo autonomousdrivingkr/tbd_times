@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Thumb from "@/components/Thumb";
 
 export interface PostFormInitial {
   slug: string;
@@ -12,6 +13,7 @@ export interface PostFormInitial {
   category?: string;
   tags: string[];
   markdown: string;
+  image?: string;
   status: "draft" | "published";
   aiGenerated?: boolean;
 }
@@ -32,6 +34,7 @@ export default function PostForm({
   const [category, setCategory] = useState(initial?.category ?? "");
   const [tags, setTags] = useState(initial?.tags.join(", ") ?? "");
   const [markdown, setMarkdown] = useState(initial?.markdown ?? "");
+  const [image, setImage] = useState(initial?.image ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"draft" | "published" | null>(null);
 
@@ -55,6 +58,7 @@ export default function PostForm({
           .map((t) => t.trim())
           .filter(Boolean),
         markdown,
+        image: image.trim() || undefined,
         status,
       };
 
@@ -162,6 +166,23 @@ export default function PostForm({
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
         />
+      </div>
+
+      <div>
+        <label className={labelClass}>대표 이미지 URL (목록·상세에 표시, 선택)</label>
+        <input
+          className={inputClass}
+          value={image}
+          onChange={(e) => setImage(e.target.value)}
+          placeholder="https://..."
+        />
+        {image.trim() && (
+          <Thumb
+            src={image.trim()}
+            alt="대표 이미지 미리보기"
+            className="mt-2 aspect-[16/9] w-full max-w-sm rounded-lg"
+          />
+        )}
       </div>
 
       <div>

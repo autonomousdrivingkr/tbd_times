@@ -23,6 +23,8 @@ export interface Post {
   /** 분야 라벨 (예: "AI", "투자", "여행") — 없을 수 있음 */
   category?: string;
   tags: string[];
+  /** 대표 이미지 URL (목록 카드·상세 히어로에 사용) — 없을 수 있음 */
+  image?: string;
   /** marked 로 렌더링한 본문 HTML */
   html: string;
   /** 대략적인 읽기 시간(분) */
@@ -80,6 +82,7 @@ function readFilePost(slug: string): Post | null {
     author: String(data.author ?? DEFAULT_AUTHOR),
     category: data.category ? String(data.category) : undefined,
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+    image: data.image ? String(data.image) : undefined,
     html,
     readingMinutes: minutes,
   };
@@ -95,6 +98,7 @@ function storedToPost(stored: StoredPost): Post {
     author: stored.author,
     category: stored.category,
     tags: stored.tags,
+    image: stored.image,
     html,
     readingMinutes: minutes,
     aiGenerated: stored.aiGenerated,

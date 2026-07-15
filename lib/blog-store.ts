@@ -22,6 +22,8 @@ export interface StoredPost {
   tags: string[];
   /** 마크다운 원문 */
   markdown: string;
+  /** 대표 이미지 URL (목록 카드·상세 히어로에 사용) */
+  image?: string;
   status: PostStatus;
   /** 생성 시각 (ISO) */
   createdAt: string;

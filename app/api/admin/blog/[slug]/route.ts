@@ -47,6 +47,7 @@ export async function PATCH(
     tags: Array.isArray(body.tags) ? body.tags.map(String).filter(Boolean) : existing.tags,
     markdown:
       typeof body.markdown === "string" && body.markdown.trim() ? body.markdown : existing.markdown,
+    image: typeof body.image === "string" ? body.image.trim() || undefined : existing.image,
     status:
       body.status === "published" || body.status === "draft" ? body.status : existing.status,
   };
