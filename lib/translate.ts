@@ -12,13 +12,15 @@ import { isBuildPhase } from "./build-phase";
 //   (배치 구성이 페이지마다 달라 unstable_cache 의 배치 단위 캐시만으로는
 //   이 중복을 못 잡는다).
 // - 번역은 사이트 전체에서 가장 호출 빈도가 높아, analysis.ts(해설)·briefing.ts
-//   와 쿼터를 공유하면 해설 생성이 번역 트래픽에 밀려 실패하기 쉽다(해설 실패는
-//   /news/[slug] 가 noindex 처리되는 것으로 직결). 그래서 번역은 별도 모델
-//   (기본 gemini-2.5-flash-lite, GEMINI_TRANSLATE_MODEL 로 변경 가능)과 별도
-//   gemini-throttle 레인("translate")을 써서 해설/브리핑 쿼터와 완전히 분리한다.
+//   와 큐를 완전히 공유하면 해설 생성이 번역 트래픽에 밀려 실패하기 쉽다(해설
+//   실패는 /news/[slug] 가 noindex 처리되는 것으로 직결). 그래서 별도
+//   gemini-throttle 레인("translate")을 쓴다 — 모델은 GEMINI_MODEL 과 동일하게
+//   둔다(별도 경량 모델로 분리를 시도했다가 그 모델이 이미 "신규 사용자에게
+//   제공되지 않는" 상태라 번역 전체가 깨진 적이 있다. 레인 분리만으로도 각
+//   레인이 독립적인 최소 처리량을 보장받으므로 모델까지 바꿀 필요는 없다).
 const processMemo = new Map<string, { t: string; s: string }>();
 
-const MODEL = process.env.GEMINI_TRANSLATE_MODEL || "gemini-2.5-flash-lite";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const LANE = "translate";
 
 function hasHangul(text: string): boolean {
