@@ -6,15 +6,20 @@ import { isBuildPhase } from "./build-phase";
 // Google Gemini API 로 해외 기사 제목/요약을 한국어로 번역한다.
 // - GEMINI_API_KEY 가 없으면 원문을 그대로 사용(기능 비활성).
 // - 동일한 배치는 unstable_cache 로 캐싱해 재생성마다 재호출하지 않는다.
-// - 요청 속도 제한은 gemini-throttle.ts 가 analysis.ts·briefing.ts 와 함께 전역으로 관리한다.
 // - 무료 티어 요청 수를 아끼기 위해, 같은 프로세스(빌드 1회 실행) 안에서는
 //   기사 링크 단위 메모이제이션을 둔다. 홈/카테고리/토픽 페이지가 같은 인기
 //   기사를 각자 번역 요청하는 중복을 없애는 것이 요청 수 절감에 가장 크다
 //   (배치 구성이 페이지마다 달라 unstable_cache 의 배치 단위 캐시만으로는
 //   이 중복을 못 잡는다).
+// - 번역은 사이트 전체에서 가장 호출 빈도가 높아, analysis.ts(해설)·briefing.ts
+//   와 쿼터를 공유하면 해설 생성이 번역 트래픽에 밀려 실패하기 쉽다(해설 실패는
+//   /news/[slug] 가 noindex 처리되는 것으로 직결). 그래서 번역은 별도 모델
+//   (기본 gemini-2.5-flash-lite, GEMINI_TRANSLATE_MODEL 로 변경 가능)과 별도
+//   gemini-throttle 레인("translate")을 써서 해설/브리핑 쿼터와 완전히 분리한다.
 const processMemo = new Map<string, { t: string; s: string }>();
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.GEMINI_TRANSLATE_MODEL || "gemini-2.5-flash-lite";
+const LANE = "translate";
 
 function hasHangul(text: string): boolean {
   return /[가-힣]/.test(text);
@@ -53,7 +58,7 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
     JSON.stringify(input),
   ].join("\n");
 
-  await reserveGeminiSlot();
+  await reserveGeminiSlot(LANE);
 
   let res: Response;
   try {
@@ -101,7 +106,7 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
     console.error(`[translate] status ${res.status}`, body.slice(0, 500));
     if (res.status === 429) {
       // 응답 메시지의 "retry in Ns" 힌트를 반영해 다음 호출들이 그만큼 더 기다리게 한다.
-      pushBackGeminiSlot(parseRetryDelayMs(body));
+      pushBackGeminiSlot(parseRetryDelayMs(body), LANE);
     }
     throw new TranslateError(`gemini status ${res.status}`);
   }
