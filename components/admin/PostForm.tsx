@@ -35,8 +35,39 @@ export default function PostForm({
   const [tags, setTags] = useState(initial?.tags.join(", ") ?? "");
   const [markdown, setMarkdown] = useState(initial?.markdown ?? "");
   const [image, setImage] = useState(initial?.image ?? "");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"draft" | "published" | null>(null);
+
+  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 파일을 다시 선택해도 onChange 가 발생하도록 초기화
+    if (!file) return;
+
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/blog/upload-image", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        const messages: Record<string, string> = {
+          unsupported_type: "지원하지 않는 이미지 형식입니다(JPG/PNG/WEBP/GIF만 가능).",
+          file_too_large: "파일이 너무 큽니다(최대 8MB).",
+          image_store_not_configured: "이미지 저장소가 설정되어 있지 않습니다.",
+        };
+        setUploadError(messages[data.error] ?? "업로드에 실패했습니다.");
+        return;
+      }
+      setImage(data.url);
+    } catch {
+      setUploadError("네트워크 오류로 업로드에 실패했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submit(status: "draft" | "published") {
     setError(null);
@@ -169,13 +200,27 @@ export default function PostForm({
       </div>
 
       <div>
-        <label className={labelClass}>대표 이미지 URL (목록·상세에 표시, 선택)</label>
+        <label className={labelClass}>대표 이미지 (목록·상세에 표시, 선택)</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="cursor-pointer rounded-md border border-line px-3 py-2 text-sm font-medium text-ink-soft hover:border-accent hover:text-accent">
+            {uploading ? "업로드 중..." : "이미지 첨부"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              disabled={uploading}
+              onChange={onFileSelected}
+            />
+          </label>
+          <span className="text-xs text-muted">또는 아래에 이미지 URL을 직접 입력하세요.</span>
+        </div>
         <input
-          className={inputClass}
+          className={`${inputClass} mt-2`}
           value={image}
           onChange={(e) => setImage(e.target.value)}
           placeholder="https://..."
         />
+        {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
         {image.trim() && (
           <Thumb
             src={image.trim()}
