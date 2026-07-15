@@ -1,8 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Thumb from "@/components/Thumb";
+
+const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
+  unsupported_type: "지원하지 않는 이미지 형식입니다(JPG/PNG/WEBP/GIF만 가능).",
+  file_too_large: "파일이 너무 큽니다(최대 8MB).",
+  image_store_not_configured: "이미지 저장소가 설정되어 있지 않습니다.",
+};
+
+/** 이미지 파일을 업로드하고 공개 URL을 반환한다. 실패 시 사용자에게 보여줄 메시지로 reject 한다. */
+async function uploadImageFile(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/admin/blog/upload-image", { method: "POST", body: form });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(UPLOAD_ERROR_MESSAGES[data.error] ?? "업로드에 실패했습니다.");
+  }
+  return data.url as string;
+}
 
 export interface PostFormInitial {
   slug: string;
@@ -36,9 +54,11 @@ export default function PostForm({
   const [markdown, setMarkdown] = useState(initial?.markdown ?? "");
   const [image, setImage] = useState(initial?.image ?? "");
   const [uploading, setUploading] = useState(false);
+  const [inlineUploading, setInlineUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"draft" | "published" | null>(null);
+  const markdownRef = useRef<HTMLTextAreaElement>(null);
 
   async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -48,24 +68,47 @@ export default function PostForm({
     setUploadError(null);
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/admin/blog/upload-image", { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        const messages: Record<string, string> = {
-          unsupported_type: "지원하지 않는 이미지 형식입니다(JPG/PNG/WEBP/GIF만 가능).",
-          file_too_large: "파일이 너무 큽니다(최대 8MB).",
-          image_store_not_configured: "이미지 저장소가 설정되어 있지 않습니다.",
-        };
-        setUploadError(messages[data.error] ?? "업로드에 실패했습니다.");
-        return;
-      }
-      setImage(data.url);
-    } catch {
-      setUploadError("네트워크 오류로 업로드에 실패했습니다.");
+      setImage(await uploadImageFile(file));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "업로드에 실패했습니다.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  // 본문 편집창에 이미지를 복사·붙여넣기(Ctrl+V) 하면 업로드 후 커서 위치에
+  // 마크다운 이미지 태그를 삽입한다. 일반 텍스트 붙여넣기는 그대로 기본 동작을 따른다.
+  async function onMarkdownPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const item = Array.from(e.clipboardData.items).find(
+      (it) => it.kind === "file" && it.type.startsWith("image/")
+    );
+    if (!item) return;
+    const file = item.getAsFile();
+    if (!file) return;
+    e.preventDefault();
+
+    setUploadError(null);
+    setInlineUploading(true);
+    try {
+      const url = await uploadImageFile(file);
+      const textarea = markdownRef.current;
+      const insertion = `![](${url})`;
+      if (textarea) {
+        const { selectionStart, selectionEnd, value } = textarea;
+        const next = value.slice(0, selectionStart) + insertion + value.slice(selectionEnd);
+        setMarkdown(next);
+        const cursor = selectionStart + insertion.length;
+        requestAnimationFrame(() => {
+          textarea.focus();
+          textarea.setSelectionRange(cursor, cursor);
+        });
+      } else {
+        setMarkdown((prev) => `${prev}\n${insertion}\n`);
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "업로드에 실패했습니다.");
+    } finally {
+      setInlineUploading(false);
     }
   }
 
@@ -241,12 +284,19 @@ export default function PostForm({
       </div>
 
       <div>
-        <label className={labelClass}>본문 (마크다운)</label>
+        <div className="flex items-baseline justify-between">
+          <label className={labelClass}>본문 (마크다운)</label>
+          <span className="text-xs text-muted">
+            {inlineUploading ? "이미지 업로드 중..." : "이미지를 복사해 붙여넣으면(Ctrl+V) 자동 삽입됩니다"}
+          </span>
+        </div>
         <textarea
+          ref={markdownRef}
           className={`${inputClass} font-mono`}
           rows={20}
           value={markdown}
           onChange={(e) => setMarkdown(e.target.value)}
+          onPaste={onMarkdownPaste}
           placeholder="## 소제목&#10;&#10;본문 내용..."
         />
       </div>
