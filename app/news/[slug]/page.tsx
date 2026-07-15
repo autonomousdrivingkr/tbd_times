@@ -18,7 +18,9 @@ export const revalidate = 1800;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-// generateMetadata 와 페이지 본문이 같은 조회 결과를 공유하도록 요청 단위 메모이즈.
+// generateMetadata 와 페이지 본문이 같은 조회 결과(해설 포함)를 공유하도록 요청 단위 메모이즈.
+// analysis 를 여기서 함께 계산해두는 이유: noindex 여부(generateMetadata)와 실제 렌더링
+// (페이지 본문)이 서로 다른 Gemini 호출 결과를 보고 판단이 어긋나는 걸 막기 위해서다.
 const getBriefing = cache(async (slug: string) => {
   const all = await getNews();
   const raw = findBySlug(all, slug);
@@ -27,7 +29,8 @@ const getBriefing = cache(async (slug: string) => {
   const related = all
     .filter((n) => n.category === raw.category && n.link !== raw.link)
     .slice(0, 4);
-  return { item, related: await translateItems(related) };
+  const analysis = await getAnalysis(item);
+  return { item, related: await translateItems(related), analysis };
 });
 
 export async function generateMetadata({
@@ -40,13 +43,17 @@ export async function generateMetadata({
   // 루트 loading.tsx 스트리밍 때문에 상태코드는 200 으로 나가므로(사이트 공통),
   // 피드에서 사라진 브리핑은 noindex 로 색인에서 제외한다.
   if (!data) return { title: "브리핑을 찾을 수 없습니다", robots: { index: false } };
-  const { item } = data;
+  const { item, analysis } = data;
   const title = item.titleKo ?? item.title;
   const description = (item.summaryKo ?? item.summary) || `${item.source} 보도를 Tibedra 편집팀이 요약·해설한 브리핑`;
   return {
     title,
     description,
     alternates: { canonical: `/news/${slug}` },
+    // 해설(배경·핵심포인트·전망)이 생성되지 않은 페이지는 원문 요약+출처링크뿐인
+    // 얇은 페이지라 색인에서 제외한다. Gemini 생성은 방문마다 재시도되므로,
+    // 이후 해설이 생성되면 다음 크롤링 때 자동으로 색인 대상이 된다.
+    robots: analysis ? undefined : { index: false },
     openGraph: {
       title,
       description,
@@ -66,12 +73,11 @@ export default async function NewsBriefingPage({
   const data = await getBriefing(slug);
   if (!data) notFound();
 
-  const { item, related } = data;
+  const { item, related, analysis } = data;
   const title = item.titleKo ?? item.title;
   const summary = item.summaryKo ?? item.summary;
   const originalTitle = item.titleKo && item.titleKo !== item.title ? item.title : null;
 
-  const analysis = await getAnalysis(item);
   const matchText = [title, summary, analysis?.background, analysis?.outlook]
     .filter(Boolean)
     .join(" ");
