@@ -10,6 +10,8 @@ export interface QuoteData {
   dividendYield?: number;
   fiftyTwoWeekHigh?: number;
   fiftyTwoWeekLow?: number;
+  /** 최근 1년 배당 지급 이력(주당 금액) — 월별 배당 차트에 쓴다. */
+  dividendEvents?: { date: number; amountPerShare: number }[];
 }
 
 export interface SearchResult {
@@ -170,10 +172,11 @@ export async function getQuote(symbol: string): Promise<QuoteData | null> {
     }
 
     const oneYearAgoSec = Date.now() / 1000 - 365 * 24 * 60 * 60;
-    const dividendEvents: Record<string, { amount: number; date: number }> = result?.events?.dividends ?? {};
-    const trailingDividendPerShare = Object.values(dividendEvents)
+    const rawDividendEvents: Record<string, { amount: number; date: number }> = result?.events?.dividends ?? {};
+    const trailingDividendEvents = Object.values(rawDividendEvents)
       .filter((d) => d.date >= oneYearAgoSec)
-      .reduce((sum, d) => sum + d.amount, 0);
+      .sort((a, b) => a.date - b.date);
+    const trailingDividendPerShare = trailingDividendEvents.reduce((sum, d) => sum + d.amount, 0);
     const dividendYield =
       price > 0 && trailingDividendPerShare > 0 ? (trailingDividendPerShare / price) * 100 : undefined;
 
@@ -187,6 +190,7 @@ export async function getQuote(symbol: string): Promise<QuoteData | null> {
       exchange: meta.exchangeName ?? "",
       // 퍼센트 값(예: 3.47 = 3.47%)으로 반환한다.
       dividendYield,
+      dividendEvents: trailingDividendEvents.map((d) => ({ date: d.date, amountPerShare: d.amount })),
       fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
       fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
     };

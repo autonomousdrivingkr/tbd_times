@@ -58,7 +58,11 @@
     "myPortfolios": "My Portfolios",
     "noPortfolio": "No portfolios yet",
     "createPortfolio": "Create Portfolio",
-    "recentActivity": "Recent Activity"
+    "recentActivity": "Recent Activity",
+    "allocation": "Asset Allocation",
+    "monthlyDividends": "Monthly Dividends",
+    "total": "Total Assets",
+    "other": "Other"
   },
   "portfolio": {
     "title": "Portfolio",

@@ -58,7 +58,11 @@
     "myPortfolios": "내 포트폴리오",
     "noPortfolio": "포트폴리오가 없습니다",
     "createPortfolio": "포트폴리오 만들기",
-    "recentActivity": "최근 활동"
+    "recentActivity": "최근 활동",
+    "allocation": "자산 배분",
+    "monthlyDividends": "월별 배당금",
+    "total": "총 자산",
+    "other": "기타"
   },
   "portfolio": {
     "title": "포트폴리오",

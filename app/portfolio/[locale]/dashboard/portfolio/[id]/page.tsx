@@ -35,6 +35,12 @@ function fmtNum(n: number, cur: string) {
     : n.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// 국내 거래소 접미사는 Yahoo Finance 심볼 형식일 뿐 사람이 알아볼 필요는 없어
+// 표시에서만 뗀다(API 호출·자산 식별에 쓰는 실제 symbol 값은 그대로 유지).
+function displaySymbol(symbol: string): string {
+  return symbol.replace(/\.(KS|KQ)$/, "");
+}
+
 export default function PortfolioDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations();
@@ -241,8 +247,8 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
               <table className="w-full text-sm min-w-[840px]">
                 <thead className="border-b border-line bg-paper">
                   <tr className="text-xs uppercase tracking-wide">
-                    <th className="text-left px-5 py-4 text-muted">{t("asset.symbol")}</th>
                     <th className="text-left px-5 py-4 text-muted">{t("asset.name")}</th>
+                    <th className="text-left px-5 py-4 text-muted">{t("asset.symbol")}</th>
                     <th className="text-right px-5 py-4 text-muted">{t("asset.shares")}</th>
                     <th className="text-right px-5 py-4 text-muted">{t("asset.avgCost")} <span className="normal-case font-normal">({displayCur})</span></th>
                     <th className="text-right px-5 py-4 text-muted">{t("asset.currentPrice")} <span className="normal-case font-normal">({displayCur})</span></th>
@@ -259,8 +265,8 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
                 <tbody className="divide-y divide-line">
                   {sorted.map(({ asset, dispPrice, dispAvgCost, dispValue, ret, loading, converting }) => (
                     <tr key={asset.id} className="hover:bg-paper transition-colors group">
-                      <td className="px-5 py-4 font-semibold text-ink">{asset.symbol}</td>
                       <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{asset.name}</td>
+                      <td className="px-5 py-4 font-semibold text-ink">{displaySymbol(asset.symbol)}</td>
                       <td className="px-5 py-4 text-right text-ink-soft">{asset.shares}</td>
                       <td className="px-5 py-4 text-right text-muted">
                         {isFinite(dispAvgCost)

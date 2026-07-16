@@ -19,6 +19,15 @@
   --color-travel: #0369a1;
   --color-travel-soft: #e0f2fe;
 
+  /* 차트 전용 팔레트 — 색맹 안전성 검증된 카테고리 색상(고정 순서) */
+  --color-chart-1: #2a78d6;
+  --color-chart-2: #008300;
+  --color-chart-3: #e87ba4;
+  --color-chart-4: #eda100;
+  --color-chart-5: #1baf7a;
+  --color-chart-6: #eb6834;
+  --color-chart-other: #a3a19a;
+
   --font-serif: "Noto Serif KR", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -37,6 +46,14 @@
     --color-invest-soft: #11271d;
     --color-crypto-soft: #2c1a0e;
     --color-travel-soft: #0c2233;
+
+    --color-chart-1: #3987e5;
+    --color-chart-2: #008300;
+    --color-chart-3: #d55181;
+    --color-chart-4: #c98500;
+    --color-chart-5: #199e70;
+    --color-chart-6: #d95926;
+    --color-chart-other: #57564f;
   }
 }
 

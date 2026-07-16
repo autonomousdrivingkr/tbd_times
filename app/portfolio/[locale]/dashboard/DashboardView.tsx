@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
+import DashboardCharts, { type AssetSlice, type MonthlyBar } from "./DashboardCharts";
 
 type DisplayCurrency = "KRW" | "USD";
 
@@ -24,6 +25,7 @@ interface QuoteData {
   price: number;
   currency: string;
   dividendYield?: number;
+  dividendEvents?: { date: number; amountPerShare: number }[];
   name?: string;
 }
 
@@ -39,6 +41,10 @@ interface Props {
   labelMyPortfolios: string;
   labelCreatePortfolio: string;
   labelNoPortfolio: string;
+  labelAllocation: string;
+  labelMonthlyDividends: string;
+  labelTotal: string;
+  labelOther: string;
 }
 
 const CUR_SYM: Record<string, string> = { KRW: "₩", USD: "$", JPY: "¥", EUR: "€", GBP: "£" };
@@ -47,6 +53,7 @@ export default function DashboardView({
   portfolios, quotes, usdKrw,
   title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
+  labelAllocation, labelMonthlyDividends, labelTotal, labelOther,
 }: Props) {
   const locale = useLocale();
   const [displayCur, setDisplayCur] = useState<DisplayCurrency>("KRW");
@@ -87,6 +94,45 @@ export default function DashboardView({
   const totalProfit = totalValue - totalCost;
   const totalReturn = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
   const dividendYieldPct = totalValue > 0 ? (annualDividend / totalValue) * 100 : 0;
+
+  // 자산 배분(파이/도넛) — 종목별 평가금액 합산, 상위 6개 + 나머지는 "기타"
+  const valueBySymbol: Record<string, number> = {};
+  for (const p of portfolios) {
+    for (const a of p.assets) {
+      const q = quotes[a.symbol];
+      const price = q ? convert(q.price, q.currency) : NaN;
+      if (!isFinite(price)) continue;
+      valueBySymbol[a.symbol] = (valueBySymbol[a.symbol] ?? 0) + price * a.shares;
+    }
+  }
+  const sortedHoldings = Object.entries(valueBySymbol).sort((a, b) => b[1] - a[1]);
+  const topHoldings = sortedHoldings.slice(0, 6);
+  const otherValue = sortedHoldings.slice(6).reduce((sum, [, v]) => sum + v, 0);
+  const assetSlices: AssetSlice[] = topHoldings.map(([symbol, value]) => ({
+    symbol,
+    value,
+    pct: totalValue > 0 ? (value / totalValue) * 100 : 0,
+  }));
+  if (otherValue > 0) {
+    assetSlices.push({ symbol: labelOther, value: otherValue, pct: totalValue > 0 ? (otherValue / totalValue) * 100 : 0 });
+  }
+
+  // 월별 배당금(바차트) — 실제 배당 지급일 기준(균등 분배 아님), 최근 1년 실적을
+  // 달력월(1~12월)에 매핑해 "보통 이맘때 배당이 들어온다"를 보여준다.
+  const monthlyAmounts = Array<number>(12).fill(0);
+  for (const p of portfolios) {
+    for (const a of p.assets) {
+      const q = quotes[a.symbol];
+      if (!q?.dividendEvents) continue;
+      for (const ev of q.dividendEvents) {
+        const perShare = convert(ev.amountPerShare, q.currency);
+        if (!isFinite(perShare)) continue;
+        const month = new Date(ev.date * 1000).getMonth();
+        monthlyAmounts[month] += perShare * a.shares;
+      }
+    }
+  }
+  const monthlyBars: MonthlyBar[] = monthlyAmounts.map((amount, month) => ({ month, amount }));
 
   return (
     <div>
@@ -151,6 +197,20 @@ export default function DashboardView({
           icon={<svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
         />
       </div>
+
+      {/* 차트: 자산 배분 + 월별 배당금 */}
+      {totalValue > 0 && (
+        <DashboardCharts
+          assetSlices={assetSlices}
+          monthlyBars={monthlyBars}
+          totalValue={totalValue}
+          currencySymbol={sym}
+          fmtNum={fmtNum}
+          labelAllocation={labelAllocation}
+          labelMonthlyDividends={labelMonthlyDividends}
+          labelTotal={labelTotal}
+        />
+      )}
 
       {/* 포트폴리오 목록 */}
       <div className="flex items-center justify-between mb-4">
