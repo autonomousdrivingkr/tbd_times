@@ -31,6 +31,10 @@
   --color-chart-9: #86b6ef;
   --color-chart-10: #6dd6ae;
   --color-chart-11: #e8a4c8;
+  --color-chart-12: #f0c674;
+  --color-chart-13: #7dd3c8;
+  --color-chart-14: #f2a679;
+  --color-chart-15: #b8a8e8;
   --color-chart-other: #a3a19a;
 
   --font-serif: "Noto Serif KR", "Iowan Old Style", Georgia, "Times New Roman", serif;
@@ -63,6 +67,10 @@
     --color-chart-9: #5598e7;
     --color-chart-10: #4fc492;
     --color-chart-11: #d47ba8;
+    --color-chart-12: #d9a83e;
+    --color-chart-13: #4fb8ac;
+    --color-chart-14: #e08a52;
+    --color-chart-15: #9985d4;
     --color-chart-other: #57564f;
   }
 }
@@ -93,6 +101,10 @@
   --color-chart-9: #5598e7;
   --color-chart-10: #4fc492;
   --color-chart-11: #d47ba8;
+  --color-chart-12: #d9a83e;
+  --color-chart-13: #4fb8ac;
+  --color-chart-14: #e08a52;
+  --color-chart-15: #9985d4;
   --color-chart-other: #57564f;
 
   color-scheme: dark;

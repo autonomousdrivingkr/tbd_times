@@ -28,8 +28,8 @@ interface Props {
   dividendYieldPct: number;
 }
 
-// 검증된 8개 카테고리 색상(고정 순서) + 상위 8개를 넘는 종목을 위한 연한 톤 3개.
-// 9~11번째는 범례에 이름이 항상 같이 표시되므로 색만으로 구분할 필요는 없다.
+// 검증된 8개 카테고리 색상(고정 순서) + 상위 8개를 넘는 종목을 위한 연한 톤 7개.
+// 9번째부터는 범례에 이름이 항상 같이 표시되므로 색만으로 구분할 필요는 없다.
 const CHART_COLORS = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
@@ -42,6 +42,10 @@ const CHART_COLORS = [
   "var(--color-chart-9)",
   "var(--color-chart-10)",
   "var(--color-chart-11)",
+  "var(--color-chart-12)",
+  "var(--color-chart-13)",
+  "var(--color-chart-14)",
+  "var(--color-chart-15)",
 ];
 const OTHER_COLOR = "var(--color-chart-other)";
 
