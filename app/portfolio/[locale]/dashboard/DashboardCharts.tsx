@@ -24,10 +24,12 @@ interface Props {
   labelMonthlyDividends: string;
   labelTotal: string;
   labelAnnualTotal: string;
+  labelDividendYield: string;
+  dividendYieldPct: number;
 }
 
-// 검증된 8개 카테고리 색상(고정 순서) + 상위 8개를 넘는 종목을 위한 연한 톤 2개.
-// 9·10번째는 범례에 이름이 항상 같이 표시되므로 색만으로 구분할 필요는 없다.
+// 검증된 8개 카테고리 색상(고정 순서) + 상위 8개를 넘는 종목을 위한 연한 톤 3개.
+// 9~11번째는 범례에 이름이 항상 같이 표시되므로 색만으로 구분할 필요는 없다.
 const CHART_COLORS = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
@@ -39,6 +41,7 @@ const CHART_COLORS = [
   "var(--color-chart-8)",
   "var(--color-chart-9)",
   "var(--color-chart-10)",
+  "var(--color-chart-11)",
 ];
 const OTHER_COLOR = "var(--color-chart-other)";
 
@@ -167,12 +170,16 @@ function MonthlyDividendBars({
   fmtNum,
   label,
   labelAnnualTotal,
+  labelDividendYield,
+  dividendYieldPct,
 }: {
   bars: MonthlyBar[];
   currencySymbol: string;
   fmtNum: (n: number) => string;
   label: string;
   labelAnnualTotal: string;
+  labelDividendYield: string;
+  dividendYieldPct: number;
 }) {
   const locale = useLocale();
   const gradientId = useId();
@@ -199,11 +206,12 @@ function MonthlyDividendBars({
 
   return (
     <div className="bg-paper-2 rounded-2xl border border-line p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-4">
         <h3 className="text-sm font-semibold text-ink-soft">{label}</h3>
         {annualTotal > 0 && (
           <span className="text-xs text-muted tabular-nums">
             {labelAnnualTotal} {currencySymbol}{fmtNum(annualTotal)}
+            {dividendYieldPct > 0 && <> · {labelDividendYield} {dividendYieldPct.toFixed(2)}%</>}
           </span>
         )}
       </div>
@@ -296,6 +304,8 @@ export default function DashboardCharts({
   labelMonthlyDividends,
   labelTotal,
   labelAnnualTotal,
+  labelDividendYield,
+  dividendYieldPct,
 }: Props) {
   return (
     <div className="flex flex-col gap-4 mb-8">
@@ -313,6 +323,8 @@ export default function DashboardCharts({
         fmtNum={fmtNum}
         label={labelMonthlyDividends}
         labelAnnualTotal={labelAnnualTotal}
+        labelDividendYield={labelDividendYield}
+        dividendYieldPct={dividendYieldPct}
       />
     </div>
   );

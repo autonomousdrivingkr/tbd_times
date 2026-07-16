@@ -225,11 +225,15 @@ export async function getQuote(symbol: string): Promise<QuoteData | null> {
     const dividendYield =
       price > 0 && trailingDividendPerShare > 0 ? (trailingDividendPerShare / price) * 100 : undefined;
 
-    let name = meta.longName ?? meta.shortName ?? symbol;
+    // 국내 상장 종목은 한글명, 그 외(미국 등 해외 종목)는 회사 전체 이름 대신
+    // 티커를 그대로 쓴다(예: "Schwab US Dividend Equity ETF" 대신 "SCHD") —
+    // 실제로 종목을 식별하는 방식과 더 가깝고 파이차트·보유자산 표에서 훨씬 간결하다.
     const krxMatch = symbol.match(/^(.+)\.(KS|KQ)$/);
+    let name: string;
     if (krxMatch) {
-      const koreanName = await getKoreanName(krxMatch[1]);
-      if (koreanName) name = koreanName;
+      name = (await getKoreanName(krxMatch[1])) ?? meta.longName ?? meta.shortName ?? symbol;
+    } else {
+      name = meta.symbol ?? symbol;
     }
 
     return {

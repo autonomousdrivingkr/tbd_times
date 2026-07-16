@@ -96,8 +96,8 @@ export default function DashboardView({
   const totalReturn = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
   const dividendYieldPct = totalValue > 0 ? (annualDividend / totalValue) * 100 : 0;
 
-  // 자산 배분(파이/도넛) — 종목별 평가금액 합산(종목명 기준 표시), 상위 10개 +
-  // 나머지는 "기타". 팔레트는 10개 슬롯까지 있지만 매 슬라이스가 범례에 이름과
+  // 자산 배분(파이/도넛) — 종목별 평가금액 합산(종목명 기준 표시), 상위 11개 +
+  // 나머지는 "기타". 팔레트는 11개 슬롯까지 있지만 매 슬라이스가 범례에 이름과
   // 함께 표시되므로 9·10번째가 색만으로 완전히 구분될 필요는 없다.
   const holdingsBySymbol: Record<string, { value: number; name: string }> = {};
   for (const p of portfolios) {
@@ -110,8 +110,8 @@ export default function DashboardView({
     }
   }
   const sortedHoldings = Object.values(holdingsBySymbol).sort((a, b) => b.value - a.value);
-  const topHoldings = sortedHoldings.slice(0, 10);
-  const otherValue = sortedHoldings.slice(10).reduce((sum, h) => sum + h.value, 0);
+  const topHoldings = sortedHoldings.slice(0, 11);
+  const otherValue = sortedHoldings.slice(11).reduce((sum, h) => sum + h.value, 0);
   const assetSlices: AssetSlice[] = topHoldings.map(({ name, value }) => ({
     label: name,
     value,
@@ -184,6 +184,8 @@ export default function DashboardView({
           labelMonthlyDividends={labelMonthlyDividends}
           labelTotal={labelTotal}
           labelAnnualTotal={labelAnnualTotal}
+          labelDividendYield={labelDividendYield}
+          dividendYieldPct={dividendYieldPct}
         />
       )}
 
