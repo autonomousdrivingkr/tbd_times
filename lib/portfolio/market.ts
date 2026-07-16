@@ -43,7 +43,7 @@ async function yfFetch(path: string, revalidate = 300): Promise<Response> {
   return res;
 }
 
-export async function searchAssets(query: string): Promise<SearchResult[]> {
+async function searchYahooAssets(query: string): Promise<SearchResult[]> {
   try {
     const res = await yfFetch(
       `/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0&enableFuzzyQuery=false`,
@@ -68,6 +68,70 @@ export async function searchAssets(query: string): Promise<SearchResult[]> {
   } catch {
     return [];
   }
+}
+
+interface NaverEtfItem {
+  itemcode: string;
+  itemname: string;
+}
+
+// Yahoo Finance의 검색은 한글 쿼리를 아예 거부하거나(순수 한글은 400 에러) 영문 부분만
+// 인식해 국내 ETF(예: "PLUS 고배당주")를 찾지 못한다. 네이버 금융이 전체 국내 ETF
+// 목록(이름+코드)을 한 번에 주는 API가 있어, 이걸로 한글 이름 매칭을 보완한다.
+async function fetchKoreanEtfList(): Promise<NaverEtfItem[]> {
+  try {
+    const res = await fetch("https://finance.naver.com/api/sise/etfItemList.naver", {
+      headers: { ...YF_HEADERS, Referer: "https://finance.naver.com/sise/etf.naver" },
+      next: { revalidate: 21600 },
+    });
+    if (!res.ok) return [];
+
+    // 이 API는 legacy EUC-KR로 응답한다(Content-Type: text/plain;charset=EUC-KR).
+    // res.json()/기본 UTF-8 디코딩으로 읽으면 한글 종목명이 깨져 이름 매칭이 항상 실패한다.
+    const buf = await res.arrayBuffer();
+    const text = new TextDecoder("euc-kr").decode(buf);
+    const data = JSON.parse(text);
+    return data?.result?.etfItemList ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function matchKoreanEtfs(query: string, list: NaverEtfItem[]): SearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  return list
+    .filter((item) => item.itemname.toLowerCase().includes(q))
+    .slice(0, 8)
+    .map((item) => ({
+      // 국내 ETF는 지수 대상과 무관하게 전부 유가증권시장(KOSPI) 세그먼트에 상장되므로
+      // Yahoo Finance 심볼은 항상 .KS 접미사를 쓴다(실측 확인: 161510.KS → PLUS 고배당주).
+      symbol: `${item.itemcode}.KS`,
+      name: item.itemname,
+      exchange: "KRX",
+      assetType: "ETF",
+      currency: "KRW",
+    }));
+}
+
+export async function searchAssets(query: string): Promise<SearchResult[]> {
+  const [yahooResults, koreanEtfList] = await Promise.all([
+    searchYahooAssets(query),
+    fetchKoreanEtfList(),
+  ]);
+  const koreanResults = matchKoreanEtfs(query, koreanEtfList);
+
+  // 심볼 기준 중복 제거 — 한글 이름 매치를 먼저 보여준다(사용자가 입력한 한글 쿼리와
+  // 더 직접적으로 관련 있는 결과이므로).
+  const seen = new Set<string>();
+  const merged: SearchResult[] = [];
+  for (const r of [...koreanResults, ...yahooResults]) {
+    if (seen.has(r.symbol)) continue;
+    seen.add(r.symbol);
+    merged.push(r);
+  }
+  return merged.slice(0, 8);
 }
 
 export async function getQuote(symbol: string): Promise<QuoteData | null> {
