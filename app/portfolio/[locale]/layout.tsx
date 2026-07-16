@@ -31,8 +31,9 @@ export default async function PortfolioLocaleLayout({ children, params }: Props)
       <SessionProvider basePath="/api/portfolio/auth">
         <LocaleHtmlSync locale={locale} />
         {/* 사이트 전역 Google 번역 위젯(LangSwitcher)이 이미 번역된 이 서브트리를
-            다시 건드리지 않도록 제외한다. */}
-        <div className="notranslate" translate="no">
+            다시 건드리지 않도록 제외한다. portfolio-theme는 OS 라이트/다크
+            설정과 무관하게 이 서브트리에서만 고정 블랙 톤을 적용한다. */}
+        <div className="notranslate portfolio-theme min-h-screen bg-paper" translate="no">
           {children}
         </div>
       </SessionProvider>

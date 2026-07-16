@@ -62,7 +62,8 @@
     "allocation": "자산 배분",
     "monthlyDividends": "월별 배당금",
     "total": "총 자산",
-    "other": "기타"
+    "other": "기타",
+    "annualTotal": "연간 총"
   },
   "portfolio": {
     "title": "포트폴리오",

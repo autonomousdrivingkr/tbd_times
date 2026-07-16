@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 
 export interface AssetSlice {
-  symbol: string;
+  label: string;
   value: number;
   pct: number;
 }
@@ -23,8 +23,11 @@ interface Props {
   labelAllocation: string;
   labelMonthlyDividends: string;
   labelTotal: string;
+  labelAnnualTotal: string;
 }
 
+// 검증된 8개 카테고리 색상(고정 순서) + 상위 8개를 넘는 종목을 위한 연한 톤 2개.
+// 9·10번째는 범례에 이름이 항상 같이 표시되므로 색만으로 구분할 필요는 없다.
 const CHART_COLORS = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
@@ -32,6 +35,10 @@ const CHART_COLORS = [
   "var(--color-chart-4)",
   "var(--color-chart-5)",
   "var(--color-chart-6)",
+  "var(--color-chart-7)",
+  "var(--color-chart-8)",
+  "var(--color-chart-9)",
+  "var(--color-chart-10)",
 ];
 const OTHER_COLOR = "var(--color-chart-other)";
 
@@ -105,7 +112,7 @@ function AllocationDonut({
             <svg viewBox="0 0 220 220" width={220} height={220} role="img" aria-label={labelAllocation}>
               {arcs.map((a, i) => (
                 <path
-                  key={a.symbol}
+                  key={a.label}
                   d={donutSegmentPath(cx, cy, hover?.i === i ? rOuter + 3 : rOuter, rInner, a.start, a.end)}
                   fill={a.color}
                   className="transition-[d] duration-150 cursor-pointer outline-none"
@@ -129,11 +136,11 @@ function AllocationDonut({
           </div>
 
           {/* 범례 — 텍스트는 항상 ink/muted, 색은 스와치만 */}
-          <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-1 gap-x-4 gap-y-2 min-w-0">
+          <div className="flex-1 w-full grid grid-cols-2 gap-x-4 gap-y-2 min-w-0">
             {arcs.map((a) => (
-              <div key={a.symbol} className="flex items-center gap-2 min-w-0">
+              <div key={a.label} className="flex items-center gap-2 min-w-0">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
-                <span className="text-sm text-ink-soft truncate">{a.symbol}</span>
+                <span className="text-sm text-ink-soft truncate">{a.label}</span>
                 <span className="text-xs text-muted ml-auto shrink-0 tabular-nums">{a.pct.toFixed(1)}%</span>
               </div>
             ))}
@@ -146,7 +153,7 @@ function AllocationDonut({
           className="fixed z-50 pointer-events-none rounded-lg bg-ink text-paper text-xs px-3 py-2 shadow-lg -translate-x-1/2 -translate-y-full"
           style={{ left: hover.x, top: hover.y - 10 }}
         >
-          <div className="font-semibold">{arcs[hover.i].symbol}</div>
+          <div className="font-semibold">{arcs[hover.i].label}</div>
           <div className="tabular-nums">{currencySymbol}{fmtNum(arcs[hover.i].value)} · {arcs[hover.i].pct.toFixed(1)}%</div>
         </div>
       )}
@@ -159,15 +166,18 @@ function MonthlyDividendBars({
   currencySymbol,
   fmtNum,
   label,
+  labelAnnualTotal,
 }: {
   bars: MonthlyBar[];
   currencySymbol: string;
   fmtNum: (n: number) => string;
   label: string;
+  labelAnnualTotal: string;
 }) {
   const locale = useLocale();
   const gradientId = useId();
   const [hover, setHover] = useState<number | null>(null);
+  const annualTotal = bars.reduce((sum, b) => sum + b.amount, 0);
 
   const monthLabels = useMemo(() => {
     const fmt = new Intl.DateTimeFormat(locale, { month: "short" });
@@ -186,7 +196,14 @@ function MonthlyDividendBars({
 
   return (
     <div className="bg-paper-2 rounded-2xl border border-line p-5 sm:p-6">
-      <h3 className="text-sm font-semibold text-ink-soft mb-4">{label}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-ink-soft">{label}</h3>
+        {annualTotal > 0 && (
+          <span className="text-xs text-muted tabular-nums">
+            {labelAnnualTotal} {currencySymbol}{fmtNum(annualTotal)}
+          </span>
+        )}
+      </div>
       <div className="w-full overflow-x-auto">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ minWidth: 480 }} role="img" aria-label={label}>
           <defs>
@@ -262,6 +279,7 @@ export default function DashboardCharts({
   labelAllocation,
   labelMonthlyDividends,
   labelTotal,
+  labelAnnualTotal,
 }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
@@ -273,7 +291,13 @@ export default function DashboardCharts({
         labelAllocation={labelAllocation}
         labelTotal={labelTotal}
       />
-      <MonthlyDividendBars bars={monthlyBars} currencySymbol={currencySymbol} fmtNum={fmtNum} label={labelMonthlyDividends} />
+      <MonthlyDividendBars
+        bars={monthlyBars}
+        currencySymbol={currencySymbol}
+        fmtNum={fmtNum}
+        label={labelMonthlyDividends}
+        labelAnnualTotal={labelAnnualTotal}
+      />
     </div>
   );
 }

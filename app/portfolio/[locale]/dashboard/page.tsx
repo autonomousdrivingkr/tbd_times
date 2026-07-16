@@ -39,6 +39,7 @@ export default async function DashboardPage() {
       labelMonthlyDividends={t("dashboard.monthlyDividends")}
       labelTotal={t("dashboard.total")}
       labelOther={t("dashboard.other")}
+      labelAnnualTotal={t("dashboard.annualTotal")}
     />
   );
 }

@@ -265,7 +265,7 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
                 <tbody className="divide-y divide-line">
                   {sorted.map(({ asset, dispPrice, dispAvgCost, dispValue, ret, loading, converting }) => (
                     <tr key={asset.id} className="hover:bg-paper transition-colors group">
-                      <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{asset.name}</td>
+                      <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{quotes[asset.symbol]?.name ?? asset.name}</td>
                       <td className="px-5 py-4 font-semibold text-ink">{displaySymbol(asset.symbol)}</td>
                       <td className="px-5 py-4 text-right text-ink-soft">{asset.shares}</td>
                       <td className="px-5 py-4 text-right text-muted">
@@ -306,7 +306,7 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
                           </button>
                           <button
                             onClick={() => setConfirmDeleteId(asset.id)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -335,7 +335,7 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-paper-2 border border-line rounded-2xl p-6 sm:p-8 w-full max-w-sm shadow-2xl">
-            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>

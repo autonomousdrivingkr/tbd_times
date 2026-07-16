@@ -124,7 +124,7 @@ export default function EditAssetModal({ portfolioId, asset, onSuccess, onClose 
             )}
           </div>
 
-          {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+          {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
@@ -140,7 +140,7 @@ export default function EditAssetModal({ portfolioId, asset, onSuccess, onClose 
         <div className="mt-6 pt-5 border-t border-line">
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
-              className="w-full text-sm text-red-500 hover:text-red-600 hover:bg-red-50 py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5">
+              className="w-full text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10 py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>

@@ -136,6 +136,23 @@ export async function searchAssets(query: string): Promise<SearchResult[]> {
   return merged.slice(0, 8);
 }
 
+// 국내 상장 종목(.KS/.KQ)은 Yahoo Finance가 longName/shortName을 영문으로만
+// 준다(예: "Samsung Electronics Co Ltd") — 네이버 증권의 종목 기본정보 API로
+// 한글 종목명을 따로 받아온다. 이름은 거의 바뀌지 않으므로 하루 단위로 캐시.
+async function getKoreanName(krxCode: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://m.stock.naver.com/api/stock/${krxCode}/basic`, {
+      headers: YF_HEADERS,
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.stockName ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getQuote(symbol: string): Promise<QuoteData | null> {
   try {
     const res = await yfFetch(
@@ -180,9 +197,16 @@ export async function getQuote(symbol: string): Promise<QuoteData | null> {
     const dividendYield =
       price > 0 && trailingDividendPerShare > 0 ? (trailingDividendPerShare / price) * 100 : undefined;
 
+    let name = meta.longName ?? meta.shortName ?? symbol;
+    const krxMatch = symbol.match(/^(.+)\.(KS|KQ)$/);
+    if (krxMatch) {
+      const koreanName = await getKoreanName(krxMatch[1]);
+      if (koreanName) name = koreanName;
+    }
+
     return {
       symbol: meta.symbol ?? symbol,
-      name: meta.longName ?? meta.shortName ?? symbol,
+      name,
       price,
       change: price - prevClose,
       changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0,

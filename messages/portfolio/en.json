@@ -62,7 +62,8 @@
     "allocation": "Asset Allocation",
     "monthlyDividends": "Monthly Dividends",
     "total": "Total Assets",
-    "other": "Other"
+    "other": "Other",
+    "annualTotal": "Annual total"
   },
   "portfolio": {
     "title": "Portfolio",

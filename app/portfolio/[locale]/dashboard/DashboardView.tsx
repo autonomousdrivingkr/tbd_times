@@ -45,6 +45,7 @@ interface Props {
   labelMonthlyDividends: string;
   labelTotal: string;
   labelOther: string;
+  labelAnnualTotal: string;
 }
 
 const CUR_SYM: Record<string, string> = { KRW: "₩", USD: "$", JPY: "¥", EUR: "€", GBP: "£" };
@@ -53,7 +54,7 @@ export default function DashboardView({
   portfolios, quotes, usdKrw,
   title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
-  labelAllocation, labelMonthlyDividends, labelTotal, labelOther,
+  labelAllocation, labelMonthlyDividends, labelTotal, labelOther, labelAnnualTotal,
 }: Props) {
   const locale = useLocale();
   const [displayCur, setDisplayCur] = useState<DisplayCurrency>("KRW");
@@ -95,26 +96,29 @@ export default function DashboardView({
   const totalReturn = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
   const dividendYieldPct = totalValue > 0 ? (annualDividend / totalValue) * 100 : 0;
 
-  // 자산 배분(파이/도넛) — 종목별 평가금액 합산, 상위 6개 + 나머지는 "기타"
-  const valueBySymbol: Record<string, number> = {};
+  // 자산 배분(파이/도넛) — 종목별 평가금액 합산(종목명 기준 표시), 상위 10개 +
+  // 나머지는 "기타". 팔레트는 10개 슬롯까지 있지만 매 슬라이스가 범례에 이름과
+  // 함께 표시되므로 9·10번째가 색만으로 완전히 구분될 필요는 없다.
+  const holdingsBySymbol: Record<string, { value: number; name: string }> = {};
   for (const p of portfolios) {
     for (const a of p.assets) {
       const q = quotes[a.symbol];
       const price = q ? convert(q.price, q.currency) : NaN;
       if (!isFinite(price)) continue;
-      valueBySymbol[a.symbol] = (valueBySymbol[a.symbol] ?? 0) + price * a.shares;
+      if (!holdingsBySymbol[a.symbol]) holdingsBySymbol[a.symbol] = { value: 0, name: q?.name ?? a.symbol };
+      holdingsBySymbol[a.symbol].value += price * a.shares;
     }
   }
-  const sortedHoldings = Object.entries(valueBySymbol).sort((a, b) => b[1] - a[1]);
-  const topHoldings = sortedHoldings.slice(0, 6);
-  const otherValue = sortedHoldings.slice(6).reduce((sum, [, v]) => sum + v, 0);
-  const assetSlices: AssetSlice[] = topHoldings.map(([symbol, value]) => ({
-    symbol,
+  const sortedHoldings = Object.values(holdingsBySymbol).sort((a, b) => b.value - a.value);
+  const topHoldings = sortedHoldings.slice(0, 10);
+  const otherValue = sortedHoldings.slice(10).reduce((sum, h) => sum + h.value, 0);
+  const assetSlices: AssetSlice[] = topHoldings.map(({ name, value }) => ({
+    label: name,
     value,
     pct: totalValue > 0 ? (value / totalValue) * 100 : 0,
   }));
   if (otherValue > 0) {
-    assetSlices.push({ symbol: labelOther, value: otherValue, pct: totalValue > 0 ? (otherValue / totalValue) * 100 : 0 });
+    assetSlices.push({ label: labelOther, value: otherValue, pct: totalValue > 0 ? (otherValue / totalValue) * 100 : 0 });
   }
 
   // 월별 배당금(바차트) — 실제 배당 지급일 기준(균등 분배 아님), 최근 1년 실적을
@@ -209,6 +213,7 @@ export default function DashboardView({
           labelAllocation={labelAllocation}
           labelMonthlyDividends={labelMonthlyDividends}
           labelTotal={labelTotal}
+          labelAnnualTotal={labelAnnualTotal}
         />
       )}
 
@@ -262,7 +267,7 @@ export default function DashboardView({
                     {sym}{fmtNum(pValue)}
                   </p>
                   <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg ${positive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
+                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg ${positive ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"}`}>
                       {positive
                         ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                         : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>}
