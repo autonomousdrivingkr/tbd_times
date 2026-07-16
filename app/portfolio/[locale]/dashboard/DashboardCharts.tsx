@@ -107,9 +107,9 @@ function AllocationDonut({
       {slices.length === 0 ? (
         <p className="text-sm text-muted py-10 text-center">데이터가 없습니다</p>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
-            <svg viewBox="0 0 220 220" width={220} height={220} role="img" aria-label={labelAllocation}>
+        <div className="flex flex-col md:flex-row items-center gap-8">
+          <div className="relative shrink-0" style={{ width: 240, height: 240 }}>
+            <svg viewBox="0 0 220 220" width={240} height={240} role="img" aria-label={labelAllocation}>
               {arcs.map((a, i) => (
                 <path
                   key={a.label}
@@ -136,7 +136,7 @@ function AllocationDonut({
           </div>
 
           {/* 범례 — 텍스트는 항상 ink/muted, 색은 스와치만 */}
-          <div className="flex-1 w-full grid grid-cols-2 gap-x-4 gap-y-2 min-w-0">
+          <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 min-w-0">
             {arcs.map((a) => (
               <div key={a.label} className="flex items-center gap-2 min-w-0">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
@@ -184,7 +184,7 @@ function MonthlyDividendBars({
     return bars.map((b) => fmt.format(new Date(2026, b.month, 1)));
   }, [bars, locale]);
 
-  const width = 640, height = 200, padLeft = 44, padBottom = 28, padTop = 12, padRight = 8;
+  const width = 640, height = 210, padLeft = 44, padBottom = 28, padTop = 24, padRight = 8;
   const plotW = width - padLeft - padRight;
   const plotH = height - padTop - padBottom;
   const maxVal = Math.max(...bars.map((b) => b.amount), 0);
@@ -193,6 +193,9 @@ function MonthlyDividendBars({
 
   const barSlot = plotW / bars.length;
   const barWidth = Math.min(28, barSlot * 0.55);
+
+  // 막대 위 라벨은 자리가 좁으니 축약 표기(1,234,000 → 1.2k)를 쓴다.
+  const compactNum = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : fmtNum(n));
 
   return (
     <div className="bg-paper-2 rounded-2xl border border-line p-5 sm:p-6">
@@ -220,7 +223,7 @@ function MonthlyDividendBars({
               <g key={t}>
                 <line x1={padLeft} x2={width - padRight} y1={y} y2={y} stroke="var(--color-line)" strokeWidth={1} />
                 <text x={padLeft - 8} y={y} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--color-muted)">
-                  {t >= 1000 ? `${(t / 1000).toFixed(t % 1000 === 0 ? 0 : 1)}k` : fmtNum(t)}
+                  {compactNum(t)}
                 </text>
               </g>
             );
@@ -233,6 +236,19 @@ function MonthlyDividendBars({
             const y = padTop + plotH - barH;
             return (
               <g key={i}>
+                {b.amount > 0 && (
+                  <text
+                    x={x + barWidth / 2}
+                    y={(barH > 0 ? y : padTop + plotH) - 6}
+                    textAnchor="middle"
+                    fontSize={9.5}
+                    fontWeight={hover === i ? 700 : 500}
+                    fill={hover === i ? "var(--color-ink)" : "var(--color-ink-soft)"}
+                    className="tabular-nums pointer-events-none transition-colors duration-150"
+                  >
+                    {compactNum(b.amount)}
+                  </text>
+                )}
                 <rect
                   x={x}
                   y={barH > 0 ? y : padTop + plotH - 1}
@@ -282,7 +298,7 @@ export default function DashboardCharts({
   labelAnnualTotal,
 }: Props) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+    <div className="flex flex-col gap-4 mb-8">
       <AllocationDonut
         slices={assetSlices}
         totalValue={totalValue}

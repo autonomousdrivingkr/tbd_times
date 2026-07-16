@@ -72,6 +72,32 @@ async function searchYahooAssets(query: string): Promise<SearchResult[]> {
   }
 }
 
+// Yahoo의 검색(/v1/finance/search)은 fuzzy 매칭이라 유효한 티커를 입력해도
+// 엉뚱한 동명 해외 상장분을 먼저 보여줄 때가 있다(실측: "SPLG" 검색 시 실제
+// NYSEArca 상장 SPLG는 안 나오고 런던거래소의 별개 상품 SPLG.L만 반환).
+// 검색과 별개로 입력값 자체가 유효한 심볼인지 차트 엔드포인트로 직접 확인해
+// 있으면 결과 맨 앞에 끼워 넣는다 — fuzzy 검색이 놓친 정확한 티커를 구제한다.
+async function tryDirectSymbol(query: string): Promise<SearchResult | null> {
+  const q = query.trim().toUpperCase();
+  if (!/^[A-Z0-9.\-=^]{1,10}$/.test(q)) return null;
+  try {
+    const res = await yfFetch(`/v8/finance/chart/${encodeURIComponent(q)}?interval=1d&range=1d`, 60);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta || typeof meta.regularMarketPrice !== "number") return null;
+    return {
+      symbol: meta.symbol ?? q,
+      name: meta.longName ?? meta.shortName ?? q,
+      exchange: meta.exchangeName ?? "",
+      assetType: mapQuoteType(meta.instrumentType ?? ""),
+      currency: meta.currency ?? "USD",
+    };
+  } catch {
+    return null;
+  }
+}
+
 interface NaverEtfItem {
   itemcode: string;
   itemname: string;
@@ -118,17 +144,19 @@ function matchKoreanEtfs(query: string, list: NaverEtfItem[]): SearchResult[] {
 }
 
 export async function searchAssets(query: string): Promise<SearchResult[]> {
-  const [yahooResults, koreanEtfList] = await Promise.all([
+  const [yahooResults, koreanEtfList, directMatch] = await Promise.all([
     searchYahooAssets(query),
     fetchKoreanEtfList(),
+    tryDirectSymbol(query),
   ]);
   const koreanResults = matchKoreanEtfs(query, koreanEtfList);
 
-  // 심볼 기준 중복 제거 — 한글 이름 매치를 먼저 보여준다(사용자가 입력한 한글 쿼리와
-  // 더 직접적으로 관련 있는 결과이므로).
+  // 심볼 기준 중복 제거. 우선순위: (1) 입력값 그대로 유효한 티커였던 직접 조회
+  // 결과 — fuzzy 검색이 놓쳤어도 사용자가 정확히 원했을 가능성이 가장 높다,
+  // (2) 한글 이름 매치, (3) Yahoo 검색 결과.
   const seen = new Set<string>();
   const merged: SearchResult[] = [];
-  for (const r of [...koreanResults, ...yahooResults]) {
+  for (const r of [...(directMatch ? [directMatch] : []), ...koreanResults, ...yahooResults]) {
     if (seen.has(r.symbol)) continue;
     seen.add(r.symbol);
     merged.push(r);

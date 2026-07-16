@@ -171,6 +171,22 @@ export default function DashboardView({
         </div>
       </div>
 
+      {/* 차트: 자산 배분(도넛) + 월별 배당금(막대) — 숫자 요약보다 먼저 배치해
+          전체 그림을 한눈에 보여준다 */}
+      {totalValue > 0 && (
+        <DashboardCharts
+          assetSlices={assetSlices}
+          monthlyBars={monthlyBars}
+          totalValue={totalValue}
+          currencySymbol={sym}
+          fmtNum={fmtNum}
+          labelAllocation={labelAllocation}
+          labelMonthlyDividends={labelMonthlyDividends}
+          labelTotal={labelTotal}
+          labelAnnualTotal={labelAnnualTotal}
+        />
+      )}
+
       {/* 요약 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard
@@ -201,21 +217,6 @@ export default function DashboardView({
           icon={<svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
         />
       </div>
-
-      {/* 차트: 자산 배분 + 월별 배당금 */}
-      {totalValue > 0 && (
-        <DashboardCharts
-          assetSlices={assetSlices}
-          monthlyBars={monthlyBars}
-          totalValue={totalValue}
-          currencySymbol={sym}
-          fmtNum={fmtNum}
-          labelAllocation={labelAllocation}
-          labelMonthlyDividends={labelMonthlyDividends}
-          labelTotal={labelTotal}
-          labelAnnualTotal={labelAnnualTotal}
-        />
-      )}
 
       {/* 포트폴리오 목록 */}
       <div className="flex items-center justify-between mb-4">
