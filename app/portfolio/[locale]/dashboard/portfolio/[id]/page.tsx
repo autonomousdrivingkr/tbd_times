@@ -19,6 +19,7 @@ interface Quote {
   price: number;
   currency: string;
   name: string;
+  dividendYield?: number;
 }
 
 type DisplayCurrency = "KRW" | "USD";
@@ -237,13 +238,15 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
         return (
           <div className="bg-paper-2 rounded-2xl border border-line overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[640px]">
+              <table className="w-full text-sm min-w-[840px]">
                 <thead className="border-b border-line bg-paper">
                   <tr className="text-xs uppercase tracking-wide">
                     <th className="text-left px-5 py-4 text-muted">{t("asset.symbol")}</th>
+                    <th className="text-left px-5 py-4 text-muted">{t("asset.name")}</th>
                     <th className="text-right px-5 py-4 text-muted">{t("asset.shares")}</th>
                     <th className="text-right px-5 py-4 text-muted">{t("asset.avgCost")} <span className="normal-case font-normal">({displayCur})</span></th>
                     <th className="text-right px-5 py-4 text-muted">{t("asset.currentPrice")} <span className="normal-case font-normal">({displayCur})</span></th>
+                    <th className="text-right px-5 py-4 text-muted">{t("asset.dividendYield")}</th>
                     <th className="text-right px-5 py-4">
                       <SortBtn col="value" label={t("portfolio.value")} />
                     </th>
@@ -256,10 +259,8 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
                 <tbody className="divide-y divide-line">
                   {sorted.map(({ asset, dispPrice, dispAvgCost, dispValue, ret, loading, converting }) => (
                     <tr key={asset.id} className="hover:bg-paper transition-colors group">
-                      <td className="px-5 py-4">
-                        <div className="font-semibold text-ink">{asset.symbol}</div>
-                        <div className="text-xs text-muted truncate max-w-[140px]">{asset.name}</div>
-                      </td>
+                      <td className="px-5 py-4 font-semibold text-ink">{asset.symbol}</td>
+                      <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{asset.name}</td>
                       <td className="px-5 py-4 text-right text-ink-soft">{asset.shares}</td>
                       <td className="px-5 py-4 text-right text-muted">
                         {isFinite(dispAvgCost)
@@ -270,6 +271,12 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
                         {loading ? <span className="text-muted text-xs">조회 중</span>
                           : converting ? <span className="text-muted text-xs">변환 중</span>
                           : `${sym}${fmtNum(dispPrice!, displayCur)}`}
+                      </td>
+                      <td className="px-5 py-4 text-right text-ink-soft">
+                        {loading ? <span className="text-muted text-xs">조회 중</span>
+                          : quotes[asset.symbol]?.dividendYield
+                            ? `${quotes[asset.symbol].dividendYield!.toFixed(2)}%`
+                            : <span className="text-muted text-xs">—</span>}
                       </td>
                       <td className="px-5 py-4 text-right font-semibold text-ink">
                         {dispValue !== null && isFinite(dispValue)
@@ -305,7 +312,7 @@ export default function PortfolioDetailPage({ params }: { params: Promise<{ id: 
                   ))}
                   {assets.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-5 py-16 text-center">
+                      <td colSpan={9} className="px-5 py-16 text-center">
                         <p className="text-muted text-sm">아직 자산이 없습니다.</p>
                         <p className="text-muted text-xs mt-1">위 버튼을 눌러 종목을 추가해보세요.</p>
                       </td>

@@ -35,6 +35,7 @@ interface Props {
   labelTotalValue: string;
   labelTotalProfit: string;
   labelTotalReturn: string;
+  labelDividendYield: string;
   labelMyPortfolios: string;
   labelCreatePortfolio: string;
   labelNoPortfolio: string;
@@ -44,7 +45,7 @@ const CUR_SYM: Record<string, string> = { KRW: "₩", USD: "$", JPY: "¥", EUR: 
 
 export default function DashboardView({
   portfolios, quotes, usdKrw,
-  title, labelTotalValue, labelTotalProfit, labelTotalReturn,
+  title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
 }: Props) {
   const locale = useLocale();
@@ -70,7 +71,7 @@ export default function DashboardView({
       : n.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  let totalValue = 0, totalCost = 0;
+  let totalValue = 0, totalCost = 0, annualDividend = 0;
   for (const p of portfolios) {
     for (const a of p.assets) {
       const q = quotes[a.symbol];
@@ -78,10 +79,14 @@ export default function DashboardView({
       const cost  = convert(a.avgCost, a.currency);
       if (isFinite(price)) totalValue += price * a.shares;
       if (isFinite(cost))  totalCost  += cost  * a.shares;
+      if (q?.dividendYield && isFinite(price)) {
+        annualDividend += price * (q.dividendYield / 100) * a.shares;
+      }
     }
   }
   const totalProfit = totalValue - totalCost;
   const totalReturn = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+  const dividendYieldPct = totalValue > 0 ? (annualDividend / totalValue) * 100 : 0;
 
   return (
     <div>
@@ -117,7 +122,7 @@ export default function DashboardView({
       </div>
 
       {/* 요약 카드 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard
           label={labelTotalValue}
           value={`${sym}${fmtNum(totalValue)}`}
@@ -134,6 +139,11 @@ export default function DashboardView({
           value={`${totalReturn >= 0 ? "+" : ""}${totalReturn.toFixed(2)}%`}
           positive={totalReturn >= 0}
           icon={<svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+        />
+        <StatCard
+          label={labelDividendYield}
+          value={annualDividend > 0 ? `${dividendYieldPct.toFixed(2)}%` : "—"}
+          icon={<svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <StatCard
           label={labelMyPortfolios}

@@ -137,7 +137,12 @@ export async function searchAssets(query: string): Promise<SearchResult[]> {
 export async function getQuote(symbol: string): Promise<QuoteData | null> {
   try {
     const res = await yfFetch(
-      `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+      // range=1y + events=div: meta.trailingAnnualDividendYield는 v8 chart 응답에
+      // 아예 없어(항상 undefined) 실제 배당수익률을 얻으려면 이 방법이 필요하다.
+      // 배당수익률을 정식으로 주는 v7/finance/quote·v10/finance/quoteSummary는
+      // 현재 crumb 인증 없이는 401(Unauthorized)이라 쓸 수 없다(실측 확인) —
+      // 대신 range=1y로 받은 배당 지급 이력을 직접 합산해 trailing 수익률을 계산한다.
+      `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1y&events=div`,
       300
     );
     if (!res.ok) return null;
@@ -147,8 +152,30 @@ export async function getQuote(symbol: string): Promise<QuoteData | null> {
     const meta = result?.meta;
     if (!meta) return null;
 
-    const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPreviousClose ?? 0;
     const price = meta.regularMarketPrice ?? 0;
+
+    // meta.chartPreviousClose는 range=1y일 때 "어제 종가"가 아니라 "1년 전 조회
+    // 시작 시점 종가"를 가리킨다(range=1d일 때만 진짜 전일 종가) — 배당수익률
+    // 계산을 위해 range=1y로 바꾸면서 함께 어긋난다. 대신 일봉 종가 배열에서
+    // 직접 전일 종가를 찾는다: 마지막 종가가 현재가와 사실상 같으면(오늘 장이
+    // 마감돼 확정된 종가) 그 앞 값을, 아니면(장중이라 오늘 값이 아직 없음)
+    // 마지막 값을 그대로 전일 종가로 쓴다.
+    const dailyCloses: (number | null)[] = result?.indicators?.quote?.[0]?.close ?? [];
+    const validCloses = dailyCloses.filter((c): c is number => c !== null && isFinite(c));
+    let prevClose = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPreviousClose ?? 0;
+    if (validCloses.length >= 2) {
+      const lastClose = validCloses[validCloses.length - 1];
+      const lastIsToday = price > 0 && Math.abs(lastClose - price) < price * 0.0005;
+      prevClose = lastIsToday ? validCloses[validCloses.length - 2] : lastClose;
+    }
+
+    const oneYearAgoSec = Date.now() / 1000 - 365 * 24 * 60 * 60;
+    const dividendEvents: Record<string, { amount: number; date: number }> = result?.events?.dividends ?? {};
+    const trailingDividendPerShare = Object.values(dividendEvents)
+      .filter((d) => d.date >= oneYearAgoSec)
+      .reduce((sum, d) => sum + d.amount, 0);
+    const dividendYield =
+      price > 0 && trailingDividendPerShare > 0 ? (trailingDividendPerShare / price) * 100 : undefined;
 
     return {
       symbol: meta.symbol ?? symbol,
@@ -158,7 +185,8 @@ export async function getQuote(symbol: string): Promise<QuoteData | null> {
       changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0,
       currency: meta.currency ?? "USD",
       exchange: meta.exchangeName ?? "",
-      dividendYield: meta.trailingAnnualDividendYield,
+      // 퍼센트 값(예: 3.47 = 3.47%)으로 반환한다.
+      dividendYield,
       fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
       fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
     };

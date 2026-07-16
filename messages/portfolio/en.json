@@ -80,6 +80,7 @@
     "shares": "Shares",
     "avgCost": "Average Cost",
     "currentPrice": "Current Price",
+    "dividendYield": "Dividend Yield",
     "searchPlaceholder": "AAPL, Samsung, QQQ...",
     "STOCK": "Stock",
     "ETF": "ETF",

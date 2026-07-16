@@ -31,6 +31,7 @@ export default async function DashboardPage() {
       labelTotalValue={t("dashboard.totalValue")}
       labelTotalProfit={t("dashboard.totalProfit")}
       labelTotalReturn={t("dashboard.totalReturn")}
+      labelDividendYield={t("dashboard.dividendYield")}
       labelMyPortfolios={t("dashboard.myPortfolios")}
       labelCreatePortfolio={t("dashboard.createPortfolio")}
       labelNoPortfolio={t("dashboard.noPortfolio")}

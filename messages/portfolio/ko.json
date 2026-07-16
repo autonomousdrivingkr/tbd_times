@@ -80,6 +80,7 @@
     "shares": "수량",
     "avgCost": "평균 매입가",
     "currentPrice": "현재가",
+    "dividendYield": "배당수익률",
     "searchPlaceholder": "AAPL, 삼성전자, QQQ...",
     "STOCK": "주식",
     "ETF": "ETF",
