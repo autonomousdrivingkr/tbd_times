@@ -13,9 +13,9 @@ export default function RestaurantCard({ place }: { place: Place }) {
         </span>
       </div>
       <p className="mt-1 text-xs font-medium text-muted">{place.region}</p>
-      {place.description && (
+      {(place.reason || place.description) && (
         <p className="mt-2 text-sm leading-relaxed text-ink-soft line-clamp-2">
-          {place.description}
+          {place.reason || place.description}
         </p>
       )}
       <div className="mt-3 space-y-1 text-xs text-muted">

@@ -19,6 +19,8 @@ export interface Place {
   mapUrl: string;
   /** 업체 홈페이지 등 네이버가 반환한 링크 (없을 수 있음) */
   link: string;
+  /** 왜 이 목록에 실렸는지 짧게 소개하는 글 (Gemini 생성, lib/food-reason.ts) */
+  reason?: string;
 }
 
 // 검색에 사용할 지역 목록. "지역명 맛집" 형태로 질의한다.
@@ -36,14 +38,9 @@ const REGIONS: string[] = [
   "부산 해운대 맛집",
   "부산 서면 맛집",
   "제주 맛집",
-  "강릉 맛집",
-  "전주 맛집",
   "대구 맛집",
-  "대전 맛집",
-  "인천 맛집",
+  "포항 맛집",
   "경주 맛집",
-  "여수 맛집",
-  "속초 맛집",
 ];
 
 interface NaverLocalItem {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getRestaurants, type Place } from "@/lib/naver-local";
+import { getFoodReasons } from "@/lib/food-reason";
 import { updatedAtLabel } from "@/lib/format";
 import RestaurantCard from "@/components/RestaurantCard";
 
@@ -21,6 +22,16 @@ export default async function FoodPage() {
     grouped.set(p.region, list);
   }
 
+  // 지역별로 "왜 이 목록에 실렸는지" 짧은 소개를 생성해 각 장소에 붙인다.
+  await Promise.all(
+    Array.from(grouped.entries()).map(async ([region, list]) => {
+      const reasons = await getFoodReasons(region, list);
+      for (const p of list) {
+        if (reasons[p.id]) p.reason = reasons[p.id];
+      }
+    })
+  );
+
   return (
     <div className="container-page py-8">
       <header className="mb-8 border-b border-line pb-6">
@@ -35,10 +46,10 @@ export default async function FoodPage() {
           전국 지역별 맛집 · 마지막 업데이트 {updatedAtLabel()}
         </p>
         <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-ink-soft">
-          Tibedra 맛집 섹션은 네이버 지역정보를 바탕으로 서울 주요 상권부터 부산·제주·전주 등
-          지방 도시까지 지역별 맛집을 모아 소개합니다. 상호명·주소·연락처 등 장소 정보는 네이버가
-          제공하며, 방문 전 영업시간과 최신 리뷰는 링크된 네이버 지도에서 다시 한번 확인하시길
-          권합니다.
+          Tibedra 맛집 섹션은 네이버 지역정보를 바탕으로 서울 주요 상권과 분당·판교·수원·용인·동탄
+          등 수도권, 부산·대구·포항·경주·제주까지 지역별 맛집을 모아 소개합니다. 상호명·주소·연락처
+          등 장소 정보는 네이버가 제공하며, 방문 전 영업시간과 최신 리뷰는 링크된 네이버 지도에서
+          다시 한번 확인하시길 권합니다.
         </p>
       </header>
 
