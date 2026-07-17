@@ -63,7 +63,8 @@
     "monthlyDividends": "Monthly Dividends",
     "total": "Total Assets",
     "other": "Other",
-    "annualTotal": "Annual total"
+    "annualTotal": "Annual total",
+    "holdingsSummary": "Combined Holdings"
   },
   "portfolio": {
     "title": "Portfolio",

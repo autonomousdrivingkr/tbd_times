@@ -46,6 +46,19 @@ interface Props {
   labelTotal: string;
   labelOther: string;
   labelAnnualTotal: string;
+  labelHoldingsSummary: string;
+  labelAssetName: string;
+  labelAssetSymbol: string;
+  labelShares: string;
+  labelCost: string;
+  labelValue: string;
+  labelReturn: string;
+}
+
+// 국내 거래소 접미사는 Yahoo Finance 심볼 형식일 뿐 사람이 알아볼 필요는 없어
+// 표시에서만 뗀다(자산 상세 표와 동일한 규칙).
+function displaySymbol(symbol: string): string {
+  return symbol.replace(/\.(KS|KQ)$/, "");
 }
 
 const CUR_SYM: Record<string, string> = { KRW: "₩", USD: "$", JPY: "¥", EUR: "€", GBP: "£" };
@@ -55,6 +68,7 @@ export default function DashboardView({
   title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
   labelAllocation, labelMonthlyDividends, labelTotal, labelOther, labelAnnualTotal,
+  labelHoldingsSummary, labelAssetName, labelAssetSymbol, labelShares, labelCost, labelValue, labelReturn,
 }: Props) {
   const locale = useLocale();
   const [displayCur, setDisplayCur] = useState<DisplayCurrency>("KRW");
@@ -96,17 +110,24 @@ export default function DashboardView({
   const totalReturn = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
   const dividendYieldPct = totalValue > 0 ? (annualDividend / totalValue) * 100 : 0;
 
-  // 자산 배분(파이/도넛) — 종목별 평가금액 합산(종목명 기준 표시), 상위 15개 +
-  // 나머지는 "기타". 팔레트는 15개 슬롯까지 있지만 매 슬라이스가 범례에 이름과
-  // 함께 표시되므로 9번째부터는 색만으로 완전히 구분될 필요는 없다.
-  const holdingsBySymbol: Record<string, { value: number; name: string }> = {};
+  // 종목별 합산(여러 포트폴리오에 걸쳐 같은 종목을 보유한 경우 하나로 묶음) —
+  // 자산 배분 도넛차트와 하단 보유 종목 표가 이 집계를 함께 쓴다. 상위 15개 +
+  // 나머지는 "기타"(도넛 전용, 팔레트는 15개 슬롯까지 있지만 매 슬라이스가
+  // 범례에 이름과 함께 표시되므로 9번째부터는 색만으로 완전히 구분될 필요는 없다).
+  interface HoldingAgg { symbol: string; name: string; shares: number; cost: number; value: number; dividendYield?: number }
+  const holdingsBySymbol: Record<string, HoldingAgg> = {};
   for (const p of portfolios) {
     for (const a of p.assets) {
       const q = quotes[a.symbol];
       const price = q ? convert(q.price, q.currency) : NaN;
-      if (!isFinite(price)) continue;
-      if (!holdingsBySymbol[a.symbol]) holdingsBySymbol[a.symbol] = { value: 0, name: q?.name ?? a.symbol };
-      holdingsBySymbol[a.symbol].value += price * a.shares;
+      const cost = convert(a.avgCost, a.currency);
+      if (!holdingsBySymbol[a.symbol]) {
+        holdingsBySymbol[a.symbol] = { symbol: a.symbol, name: q?.name ?? a.symbol, shares: 0, cost: 0, value: 0, dividendYield: q?.dividendYield };
+      }
+      const h = holdingsBySymbol[a.symbol];
+      h.shares += a.shares;
+      if (isFinite(cost)) h.cost += cost * a.shares;
+      if (isFinite(price)) h.value += price * a.shares;
     }
   }
   const sortedHoldings = Object.values(holdingsBySymbol).sort((a, b) => b.value - a.value);
@@ -284,6 +305,56 @@ export default function DashboardView({
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* 보유 종목 합산 — 여러 포트폴리오에 걸친 동일 종목을 하나로 묶어 보여준다 */}
+      {sortedHoldings.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold text-ink-soft mb-4">{labelHoldingsSummary}</h2>
+          <div className="bg-paper-2 rounded-2xl border border-line overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[720px]">
+                <thead className="border-b border-line bg-paper">
+                  <tr className="text-xs uppercase tracking-wide">
+                    <th className="text-left px-5 py-4 text-muted">{labelAssetName}</th>
+                    <th className="text-left px-5 py-4 text-muted">{labelAssetSymbol}</th>
+                    <th className="text-right px-5 py-4 text-muted">{labelShares}</th>
+                    <th className="text-right px-5 py-4 text-muted">{labelCost} <span className="normal-case font-normal">({displayCur})</span></th>
+                    <th className="text-right px-5 py-4 text-muted">{labelValue} <span className="normal-case font-normal">({displayCur})</span></th>
+                    <th className="text-right px-5 py-4 text-muted">{labelReturn}</th>
+                    <th className="text-right px-5 py-4 text-muted">{labelDividendYield}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {sortedHoldings.map((h) => {
+                    const ret = h.cost > 0 ? ((h.value - h.cost) / h.cost) * 100 : null;
+                    return (
+                      <tr key={h.symbol} className="hover:bg-paper transition-colors">
+                        <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{h.name}</td>
+                        <td className="px-5 py-4 font-semibold text-ink">{displaySymbol(h.symbol)}</td>
+                        <td className="px-5 py-4 text-right text-ink-soft">{h.shares}</td>
+                        <td className="px-5 py-4 text-right text-muted">
+                          {h.cost > 0 ? `${sym}${fmtNum(h.cost)}` : <span className="text-xs">—</span>}
+                        </td>
+                        <td className="px-5 py-4 text-right font-semibold text-ink">
+                          {h.value > 0 ? `${sym}${fmtNum(h.value)}` : <span className="text-xs">—</span>}
+                        </td>
+                        <td className={`px-5 py-4 text-right font-semibold ${
+                          ret === null ? "text-muted" : ret >= 0 ? "text-emerald-600" : "text-red-600"
+                        }`}>
+                          {ret === null ? <span className="text-xs">—</span> : `${ret >= 0 ? "+" : ""}${ret.toFixed(2)}%`}
+                        </td>
+                        <td className="px-5 py-4 text-right text-ink-soft">
+                          {h.dividendYield ? `${h.dividendYield.toFixed(2)}%` : <span className="text-xs">—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>

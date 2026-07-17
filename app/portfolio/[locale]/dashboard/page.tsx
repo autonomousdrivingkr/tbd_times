@@ -40,6 +40,13 @@ export default async function DashboardPage() {
       labelTotal={t("dashboard.total")}
       labelOther={t("dashboard.other")}
       labelAnnualTotal={t("dashboard.annualTotal")}
+      labelHoldingsSummary={t("dashboard.holdingsSummary")}
+      labelAssetName={t("asset.name")}
+      labelAssetSymbol={t("asset.symbol")}
+      labelShares={t("asset.shares")}
+      labelCost={t("portfolio.cost")}
+      labelValue={t("portfolio.value")}
+      labelReturn={t("portfolio.return")}
     />
   );
 }
