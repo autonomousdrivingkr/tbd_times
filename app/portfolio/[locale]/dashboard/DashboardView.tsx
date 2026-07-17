@@ -6,6 +6,8 @@ import { useLocale } from "next-intl";
 import DashboardCharts, { type AssetSlice, type MonthlyBar } from "./DashboardCharts";
 
 type DisplayCurrency = "KRW" | "USD";
+type HoldingSortKey = "shares" | "cost" | "value" | "ret" | "dividendYield";
+type SortDir = "asc" | "desc";
 
 interface Asset {
   symbol: string;
@@ -72,6 +74,17 @@ export default function DashboardView({
 }: Props) {
   const locale = useLocale();
   const [displayCur, setDisplayCur] = useState<DisplayCurrency>("KRW");
+  const [holdingsSortKey, setHoldingsSortKey] = useState<HoldingSortKey>("value");
+  const [holdingsSortDir, setHoldingsSortDir] = useState<SortDir>("desc");
+
+  function handleHoldingsSort(key: HoldingSortKey) {
+    if (holdingsSortKey === key) {
+      setHoldingsSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setHoldingsSortKey(key);
+      setHoldingsSortDir("desc");
+    }
+  }
 
   function convert(amount: number, fromCur: string): number {
     if (!isFinite(amount)) return NaN;
@@ -158,6 +171,48 @@ export default function DashboardView({
     }
   }
   const monthlyBars: MonthlyBar[] = monthlyAmounts.map((amount, month) => ({ month, amount }));
+
+  // 보유 종목 표는 도넛차트의 고정 정렬(평가금액 내림차순)과 별도로 사용자가
+  // 선택한 컬럼 기준으로 정렬한다.
+  interface HoldingRow extends HoldingAgg { ret: number | null }
+  function holdingSortValue(h: HoldingRow, key: HoldingSortKey): number {
+    switch (key) {
+      case "shares": return h.shares;
+      case "cost": return h.cost;
+      case "value": return h.value;
+      case "ret": return h.ret ?? -Infinity;
+      case "dividendYield": return h.dividendYield ?? -Infinity;
+    }
+  }
+  const holdingRows: HoldingRow[] = sortedHoldings.map((h) => ({
+    ...h,
+    ret: h.cost > 0 ? ((h.value - h.cost) / h.cost) * 100 : null,
+  }));
+  const displayedHoldings = [...holdingRows].sort((a, b) => {
+    const av = holdingSortValue(a, holdingsSortKey);
+    const bv = holdingSortValue(b, holdingsSortKey);
+    return holdingsSortDir === "desc" ? bv - av : av - bv;
+  });
+
+  function HoldingsSortBtn({ col, label }: { col: HoldingSortKey; label: string }) {
+    const active = holdingsSortKey === col;
+    return (
+      <button
+        onClick={() => handleHoldingsSort(col)}
+        className={`inline-flex items-center gap-1 hover:text-ink-soft transition-colors ${active ? "text-accent" : "text-muted"}`}
+      >
+        {label}
+        <span className="flex flex-col leading-none ml-0.5">
+          <svg className={`w-2.5 h-2.5 -mb-0.5 ${active && holdingsSortDir === "asc" ? "text-accent" : "text-line"}`} fill="currentColor" viewBox="0 0 10 6">
+            <path d="M5 0L10 6H0z" />
+          </svg>
+          <svg className={`w-2.5 h-2.5 ${active && holdingsSortDir === "desc" ? "text-accent" : "text-line"}`} fill="currentColor" viewBox="0 0 10 6">
+            <path d="M5 6L0 0h10z" />
+          </svg>
+        </span>
+      </button>
+    );
+  }
 
   return (
     <div>
@@ -319,38 +374,45 @@ export default function DashboardView({
                   <tr className="text-xs uppercase tracking-wide">
                     <th className="text-left px-5 py-4 text-muted">{labelAssetName}</th>
                     <th className="text-left px-5 py-4 text-muted">{labelAssetSymbol}</th>
-                    <th className="text-right px-5 py-4 text-muted">{labelShares}</th>
-                    <th className="text-right px-5 py-4 text-muted">{labelCost} <span className="normal-case font-normal">({displayCur})</span></th>
-                    <th className="text-right px-5 py-4 text-muted">{labelValue} <span className="normal-case font-normal">({displayCur})</span></th>
-                    <th className="text-right px-5 py-4 text-muted">{labelReturn}</th>
-                    <th className="text-right px-5 py-4 text-muted">{labelDividendYield}</th>
+                    <th className="text-right px-5 py-4">
+                      <HoldingsSortBtn col="shares" label={labelShares} />
+                    </th>
+                    <th className="text-right px-5 py-4">
+                      <HoldingsSortBtn col="cost" label={labelCost} /> <span className="normal-case font-normal text-muted">({displayCur})</span>
+                    </th>
+                    <th className="text-right px-5 py-4">
+                      <HoldingsSortBtn col="value" label={labelValue} /> <span className="normal-case font-normal text-muted">({displayCur})</span>
+                    </th>
+                    <th className="text-right px-5 py-4">
+                      <HoldingsSortBtn col="ret" label={labelReturn} />
+                    </th>
+                    <th className="text-right px-5 py-4">
+                      <HoldingsSortBtn col="dividendYield" label={labelDividendYield} />
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {sortedHoldings.map((h) => {
-                    const ret = h.cost > 0 ? ((h.value - h.cost) / h.cost) * 100 : null;
-                    return (
-                      <tr key={h.symbol} className="hover:bg-paper transition-colors">
-                        <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{h.name}</td>
-                        <td className="px-5 py-4 font-semibold text-ink">{displaySymbol(h.symbol)}</td>
-                        <td className="px-5 py-4 text-right text-ink-soft">{h.shares}</td>
-                        <td className="px-5 py-4 text-right text-muted">
-                          {h.cost > 0 ? `${sym}${fmtNum(h.cost)}` : <span className="text-xs">—</span>}
-                        </td>
-                        <td className="px-5 py-4 text-right font-semibold text-ink">
-                          {h.value > 0 ? `${sym}${fmtNum(h.value)}` : <span className="text-xs">—</span>}
-                        </td>
-                        <td className={`px-5 py-4 text-right font-semibold ${
-                          ret === null ? "text-muted" : ret >= 0 ? "text-emerald-600" : "text-red-600"
-                        }`}>
-                          {ret === null ? <span className="text-xs">—</span> : `${ret >= 0 ? "+" : ""}${ret.toFixed(2)}%`}
-                        </td>
-                        <td className="px-5 py-4 text-right text-ink-soft">
-                          {h.dividendYield ? `${h.dividendYield.toFixed(2)}%` : <span className="text-xs">—</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {displayedHoldings.map((h) => (
+                    <tr key={h.symbol} className="hover:bg-paper transition-colors">
+                      <td className="px-5 py-4 text-ink-soft truncate max-w-[160px]">{h.name}</td>
+                      <td className="px-5 py-4 font-semibold text-ink">{displaySymbol(h.symbol)}</td>
+                      <td className="px-5 py-4 text-right text-ink-soft">{h.shares}</td>
+                      <td className="px-5 py-4 text-right text-muted">
+                        {h.cost > 0 ? `${sym}${fmtNum(h.cost)}` : <span className="text-xs">—</span>}
+                      </td>
+                      <td className="px-5 py-4 text-right font-semibold text-ink">
+                        {h.value > 0 ? `${sym}${fmtNum(h.value)}` : <span className="text-xs">—</span>}
+                      </td>
+                      <td className={`px-5 py-4 text-right font-semibold ${
+                        h.ret === null ? "text-muted" : h.ret >= 0 ? "text-emerald-600" : "text-red-600"
+                      }`}>
+                        {h.ret === null ? <span className="text-xs">—</span> : `${h.ret >= 0 ? "+" : ""}${h.ret.toFixed(2)}%`}
+                      </td>
+                      <td className="px-5 py-4 text-right text-ink-soft">
+                        {h.dividendYield ? `${h.dividendYield.toFixed(2)}%` : <span className="text-xs">—</span>}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
