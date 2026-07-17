@@ -13,6 +13,8 @@ export interface NavSection {
   key: string;
   /** 강조 색상 (CSS 변수) */
   accent: string;
+  /** 배지 배경색 (CSS 변수) — places 섹션의 카드 카테고리 배지에 쓴다 */
+  accentSoft?: string;
   /** 섹션 부제 */
   subtitle: string;
 }
@@ -64,7 +66,17 @@ export const NAV_SECTIONS: NavSection[] = [
     kind: "places",
     key: "food",
     accent: "var(--color-crypto)",
+    accentSoft: "var(--color-crypto-soft)",
     subtitle: "네이버 지역정보로 찾아보는 전국 맛집",
+  },
+  {
+    label: "운동/건강",
+    href: "/exercise",
+    kind: "places",
+    key: "exercise",
+    accent: "var(--color-health)",
+    accentSoft: "var(--color-health-soft)",
+    subtitle: "네이버 지역정보로 찾아보는 전국 헬스장·운동 시설",
   },
 ];
 

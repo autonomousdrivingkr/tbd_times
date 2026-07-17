@@ -18,6 +18,8 @@
   --color-crypto-soft: #fdeede;
   --color-travel: #0369a1;
   --color-travel-soft: #e0f2fe;
+  --color-health: #dc2626;
+  --color-health-soft: #fde8e8;
 
   /* 차트 전용 팔레트 — 색맹 안전성 검증된 카테고리 색상(고정 순서) */
   --color-chart-1: #2a78d6;
@@ -55,6 +57,7 @@
     --color-invest-soft: #11271d;
     --color-crypto-soft: #2c1a0e;
     --color-travel-soft: #0c2233;
+    --color-health-soft: #3a1414;
 
     --color-chart-1: #3987e5;
     --color-chart-2: #008300;

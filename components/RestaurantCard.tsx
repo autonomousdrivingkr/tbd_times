@@ -1,13 +1,21 @@
 import type { Place } from "@/lib/naver-local";
 
-export default function RestaurantCard({ place }: { place: Place }) {
+export default function RestaurantCard({
+  place,
+  accent = "var(--color-crypto)",
+  accentSoft = "var(--color-crypto-soft)",
+}: {
+  place: Place;
+  accent?: string;
+  accentSoft?: string;
+}) {
   return (
     <article className="rounded-lg border border-line bg-paper-2 p-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-serif text-lg font-bold leading-snug">{place.name}</h3>
         <span
           className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-          style={{ background: "var(--color-crypto-soft)", color: "var(--color-crypto)" }}
+          style={{ background: accentSoft, color: accent }}
         >
           {place.category}
         </span>
