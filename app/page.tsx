@@ -151,6 +151,24 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* 블로그 — 편집장이 직접 쓰는 개인 글, 최신 3개만 요약 노출. 브리핑과
+          뉴스 섹션(AI 등) 사이에 배치해 자체 콘텐츠를 먼저 보여준다 */}
+      {recentPosts.length > 0 && (
+        <section className="mb-14">
+          <SectionHeading
+            title="블로그"
+            subtitle="편집장이 직접 쓰는 개인 노트"
+            href="/blog"
+            accent="var(--color-accent)"
+          />
+          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {recentPosts.map((post) => (
+              <BlogSummaryCard key={post.slug} post={post} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 섹션들 (AI · 반도체 · 투자 · 빅테크 · 여행) */}
       {sections.map((section, idx) => (
         <Fragment key={section.key}>
@@ -178,23 +196,6 @@ export default async function HomePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {restaurants.slice(0, 6).map((p) => (
               <RestaurantCard key={p.id} place={p} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 블로그 — 편집장이 직접 쓰는 개인 글, 최신 3개만 요약 노출 */}
-      {recentPosts.length > 0 && (
-        <section className="mb-14">
-          <SectionHeading
-            title="블로그"
-            subtitle="편집장이 직접 쓰는 개인 노트"
-            href="/blog"
-            accent="var(--color-accent)"
-          />
-          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {recentPosts.map((post) => (
-              <BlogSummaryCard key={post.slug} post={post} />
             ))}
           </div>
         </section>
