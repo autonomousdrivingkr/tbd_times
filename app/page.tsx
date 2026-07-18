@@ -8,11 +8,13 @@ import { updatedAtLabel } from "@/lib/format";
 import { TOPICS, getTopic, filterByTopic } from "@/lib/topics";
 import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS, EMBEDDED_TOPIC_SLUGS } from "@/lib/sections";
 import { getRestaurants } from "@/lib/naver-local";
+import { getAllPosts } from "@/lib/blog";
 import NewsCard from "@/components/NewsCard";
 import SectionHeading from "@/components/SectionHeading";
 import AdSlot from "@/components/AdSlot";
 import DailyTerms from "@/components/DailyTerms";
 import RestaurantCard from "@/components/RestaurantCard";
+import BlogSummaryCard from "@/components/BlogSummaryCard";
 
 // 30분마다 정적 페이지를 재생성(ISR). 아침 Cron 이 강제 무효화도 한다.
 export const revalidate = 1800;
@@ -27,11 +29,13 @@ const NEWS_SECTIONS = NAV_SECTIONS.filter((s) => s.kind !== "places");
 const FOOD_SECTION = NAV_SECTIONS.find((s) => s.kind === "places");
 
 export default async function HomePage() {
-  const [all, briefing, restaurants] = await Promise.all([
+  const [all, briefing, restaurants, posts] = await Promise.all([
     getNews(),
     getDailyBriefing(),
     getRestaurants(),
+    getAllPosts(),
   ]);
+  const recentPosts = posts.slice(0, 3);
 
   // 상단 섹션별 상위 항목 선별 (카테고리 또는 키워드 토픽)
   const sections = NEWS_SECTIONS.map((s) => {
@@ -174,6 +178,23 @@ export default async function HomePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {restaurants.slice(0, 6).map((p) => (
               <RestaurantCard key={p.id} place={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 블로그 — 편집장이 직접 쓰는 개인 글, 최신 3개만 요약 노출 */}
+      {recentPosts.length > 0 && (
+        <section className="mb-14">
+          <SectionHeading
+            title="블로그"
+            subtitle="편집장이 직접 쓰는 개인 노트"
+            href="/blog"
+            accent="var(--color-accent)"
+          />
+          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {recentPosts.map((post) => (
+              <BlogSummaryCard key={post.slug} post={post} />
             ))}
           </div>
         </section>
