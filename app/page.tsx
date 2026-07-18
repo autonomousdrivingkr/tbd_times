@@ -7,8 +7,7 @@ import { resolveImages } from "@/lib/images";
 import { updatedAtLabel } from "@/lib/format";
 import { TOPICS, getTopic, filterByTopic } from "@/lib/topics";
 import { NAV_SECTIONS, PROMOTED_TOPIC_SLUGS, EMBEDDED_TOPIC_SLUGS } from "@/lib/sections";
-import { getRestaurants, type Place } from "@/lib/naver-local";
-import { getExercisePlaces } from "@/lib/naver-exercise";
+import { getRestaurants } from "@/lib/naver-local";
 import NewsCard from "@/components/NewsCard";
 import SectionHeading from "@/components/SectionHeading";
 import AdSlot from "@/components/AdSlot";
@@ -23,19 +22,15 @@ const SECONDARY_TOPICS = TOPICS.filter(
   (t) => !PROMOTED_TOPIC_SLUGS.includes(t.slug) && !EMBEDDED_TOPIC_SLUGS.includes(t.slug)
 );
 
-// 뉴스(NewsItem) 기반 섹션만 — "places"(맛집·운동/건강)는 데이터 형태가 달라 별도 처리한다.
+// 뉴스(NewsItem) 기반 섹션만 — "places"(맛집)는 데이터 형태가 달라 별도 처리한다.
 const NEWS_SECTIONS = NAV_SECTIONS.filter((s) => s.kind !== "places");
-const PLACES_SECTIONS = NAV_SECTIONS.filter((s) => s.kind === "places");
-const PLACES_FETCHERS: Record<string, () => Promise<Place[]>> = {
-  food: getRestaurants,
-  exercise: getExercisePlaces,
-};
+const FOOD_SECTION = NAV_SECTIONS.find((s) => s.kind === "places");
 
 export default async function HomePage() {
-  const [all, briefing, placesData] = await Promise.all([
+  const [all, briefing, restaurants] = await Promise.all([
     getNews(),
     getDailyBriefing(),
-    Promise.all(PLACES_SECTIONS.map((s) => PLACES_FETCHERS[s.key]?.() ?? Promise.resolve([]))),
+    getRestaurants(),
   ]);
 
   // 상단 섹션별 상위 항목 선별 (카테고리 또는 키워드 토픽)
@@ -167,31 +162,22 @@ export default async function HomePage() {
         </Fragment>
       ))}
 
-      {/* 맛집·운동/건강 — 네이버 지역정보 기반, 뉴스와 데이터 형태가 달라 별도 렌더 */}
-      {PLACES_SECTIONS.map((section, idx) => {
-        const places = placesData[idx];
-        if (places.length === 0) return null;
-        return (
-          <section key={section.key} className="mb-14">
-            <SectionHeading
-              title={section.label}
-              subtitle={section.subtitle}
-              href={section.href}
-              accent={section.accent}
-            />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {places.slice(0, 6).map((p) => (
-                <RestaurantCard
-                  key={p.id}
-                  place={p}
-                  accent={section.accent}
-                  accentSoft={section.accentSoft}
-                />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      {/* 맛집 — 네이버 지역정보 기반, 뉴스와 데이터 형태가 달라 별도 렌더 */}
+      {FOOD_SECTION && restaurants.length > 0 && (
+        <section className="mb-14">
+          <SectionHeading
+            title={FOOD_SECTION.label}
+            subtitle={FOOD_SECTION.subtitle}
+            href={FOOD_SECTION.href}
+            accent={FOOD_SECTION.accent}
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {restaurants.slice(0, 6).map((p) => (
+              <RestaurantCard key={p.id} place={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {all.length === 0 && (
         <p className="py-20 text-center text-muted">

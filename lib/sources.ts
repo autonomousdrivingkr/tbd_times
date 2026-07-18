@@ -2,7 +2,7 @@
 // 안정적으로 RSS/Atom 피드를 제공하는 매체 위주로 큐레이션했다 (생존 테스트 통과 피드만).
 // 일부 피드는 시간이 지나며 변경될 수 있으므로 수집 단계에서 개별 실패를 허용한다.
 
-export type Category = "ai" | "investment" | "travel";
+export type Category = "ai" | "investment" | "travel" | "exercise";
 
 export interface Source {
   /** 화면에 표시할 매체명 */
@@ -57,20 +57,32 @@ export const SOURCES: Source[] = [
   // ── 여행 / 레저 (해외) ────────────────────────────────
   { name: "Condé Nast Traveler", url: "https://www.cntraveler.com/feed/rss", category: "travel" },
   { name: "Skift", url: "https://skift.com/feed/", category: "travel" },
+
+  // ── 운동 / 건강 (해외) ────────────────────────────────
+  { name: "Men's Health", url: "https://www.menshealth.com/rss/all.xml/", category: "exercise" },
+  { name: "Runner's World", url: "https://www.runnersworld.com/rss/all.xml/", category: "exercise" },
+  { name: "Prevention", url: "https://www.prevention.com/rss/all.xml/", category: "exercise" },
+  { name: "ScienceDaily Fitness", url: "https://www.sciencedaily.com/rss/health_medicine/fitness.xml", category: "exercise" },
+  // ── 운동 / 건강 (국내) ────────────────────────────────
+  { name: "코메디닷컴", url: "https://www.kormedi.com/feed", category: "exercise", ko: true },
+  { name: "헬스경향", url: "https://www.k-health.com/rss/allArticle.xml", category: "exercise", ko: true },
+  { name: "메디컬투데이", url: "https://www.mdtoday.co.kr/rss/allArticle.xml", category: "exercise", ko: true },
 ];
 
-export const CATEGORIES: Category[] = ["ai", "investment", "travel"];
+export const CATEGORIES: Category[] = ["ai", "investment", "travel", "exercise"];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   ai: "AI",
   investment: "투자",
   travel: "여행",
+  exercise: "운동/건강",
 };
 
 export const CATEGORY_DESC: Record<Category, string> = {
   ai: "전세계 인공지능·AI 연구·모델 동향",
   investment: "글로벌 증시·금리·코인 등 금융 소식",
   travel: "국내외 여행지·항공·레저 소식",
+  exercise: "운동·피트니스·건강 관리 소식",
 };
 
 // 각 카테고리 상단에 표시할 자체 작성 소개 문단(원본 콘텐츠).
@@ -80,10 +92,13 @@ export const CATEGORY_INTRO: Record<Category, string> = {
     "금리와 환율, 기업 실적부터 가상자산까지 — 투자 환경은 매일 빠르게 움직입니다. Tibedra의 투자 섹션은 미국과 한국의 증시·금융·경제는 물론 연준 금리, 비트코인·이더리움 등 코인 시장 소식까지 한곳에 모읍니다. 모든 콘텐츠는 정보 제공 목적이며 투자 권유가 아닙니다.",
   travel:
     "여행은 다시 일상이 되었습니다. Tibedra의 여행 섹션은 국내외 여행지와 항공·호텔, 레저 트렌드 소식을 매일 모아 전합니다. 국내 매체 기사와 함께 해외 매체의 기사는 한국어로 자동 번역해 제공하니, 다음 여행 계획에 참고하세요.",
+  exercise:
+    "운동과 건강 관리는 매일의 컨디션을 좌우합니다. Tibedra의 운동/건강 섹션은 피트니스·러닝 등 운동 트렌드부터 건강 연구·의료 소식까지 국내외 매체 기사를 모아 전합니다. 해외 매체의 기사는 한국어로 자동 번역해 제공합니다.",
 };
 
 export const CATEGORY_ACCENT: Record<Category, string> = {
   ai: "var(--color-ai)",
   investment: "var(--color-invest)",
   travel: "var(--color-travel)",
+  exercise: "var(--color-health)",
 };

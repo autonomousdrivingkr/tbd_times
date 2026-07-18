@@ -4,6 +4,7 @@ const STYLES: Record<Category, string> = {
   ai: "bg-ai-soft text-ai",
   investment: "bg-invest-soft text-invest",
   travel: "bg-travel-soft text-travel",
+  exercise: "bg-health-soft text-health",
 };
 
 export default function CategoryBadge({ category }: { category: Category }) {
