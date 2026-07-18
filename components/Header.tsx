@@ -7,9 +7,9 @@ import LangSwitcher from "@/components/LangSwitcher";
 const NAV = [
   { href: "/", label: "홈" },
   { href: "/briefing", label: "브리핑" },
+  { href: "/blog", label: "블로그" },
   ...NAV_SECTIONS.map((s) => ({ href: s.href, label: s.label })),
   { href: "/portfolio", label: "포트폴리오" },
-  { href: "/blog", label: "블로그" },
 ];
 
 // 상단 섹션으로 승격되거나 다른 섹션에 묶인 토픽은 칩에서 제외
