@@ -25,12 +25,20 @@ const getBriefing = cache(async (slug: string) => {
   const all = await getNews();
   const raw = findBySlug(all, slug);
   if (!raw) return null;
-  const [item] = await resolveImages(await translateItems([raw]));
+  const [translated] = await translateItems([raw]);
   const related = all
     .filter((n) => n.category === raw.category && n.link !== raw.link)
     .slice(0, 4);
-  const analysis = await getAnalysis(item);
-  return { item, related: await translateItems(related), analysis };
+  // 세 호출 모두 서로의 결과에 의존하지 않는다(썸네일 조회·해설 생성·관련
+  // 기사 번역) — 순차 실행하면 Gemini 호출 두 번(해설·번역)과 외부 사이트
+  // 썸네일 조회가 그대로 더해져 페이지가 느리게 느껴진다. 병렬로 돌려 전체
+  // 대기 시간을 세 작업 중 가장 느린 것 하나로 줄인다.
+  const [[item], analysis, translatedRelated] = await Promise.all([
+    resolveImages([translated]),
+    getAnalysis(translated),
+    translateItems(related),
+  ]);
+  return { item, related: translatedRelated, analysis };
 });
 
 export async function generateMetadata({
