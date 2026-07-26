@@ -20,6 +20,7 @@ model User {
   accounts   Account[]
   sessions   Session[]
   portfolios Portfolio[]
+  posts      Post[]
 }
 
 model Account {
@@ -100,6 +101,24 @@ model Dividend {
   date     DateTime
 
   asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id            String     @id @default(cuid())
+  authorId      String
+  title         String
+  content       String
+  status        PostStatus @default(PUBLISHED)
+  removedReason String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+enum PostStatus {
+  PUBLISHED
+  REMOVED
 }
 
 enum AssetType {

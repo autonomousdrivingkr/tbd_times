@@ -14,6 +14,7 @@
   "nav": {
     "dashboard": "대시보드",
     "portfolio": "포트폴리오",
+    "board": "게시판",
     "assets": "자산",
     "dividends": "배당",
     "settings": "설정",
@@ -81,6 +82,24 @@
     "cost": "투자금액",
     "return": "수익률",
     "profit": "손익"
+  },
+  "board": {
+    "title": "게시판",
+    "write": "글쓰기",
+    "newPost": "새 글쓰기",
+    "titleLabel": "제목",
+    "contentLabel": "내용",
+    "titlePlaceholder": "제목을 입력하세요",
+    "contentPlaceholder": "내용을 입력하세요",
+    "empty": "아직 게시글이 없습니다",
+    "emptyDesc": "첫 번째 글을 작성해보세요",
+    "notFound": "게시글을 찾을 수 없습니다",
+    "notFoundDesc": "삭제되었거나 존재하지 않는 게시글입니다",
+    "deleteConfirmTitle": "게시글 삭제",
+    "deleteConfirmDesc": "삭제하면 게시글이 영구적으로 삭제됩니다",
+    "blockedError": "부적절한 내용이 포함되어 있어 등록할 수 없습니다",
+    "submitError": "게시글 등록 중 오류가 발생했습니다",
+    "backToList": "목록으로"
   },
   "asset": {
     "title": "자산 추가",

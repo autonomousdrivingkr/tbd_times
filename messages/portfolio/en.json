@@ -14,6 +14,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "portfolio": "Portfolio",
+    "board": "Board",
     "assets": "Assets",
     "dividends": "Dividends",
     "settings": "Settings",
@@ -81,6 +82,24 @@
     "cost": "Cost Basis",
     "return": "Return",
     "profit": "Profit/Loss"
+  },
+  "board": {
+    "title": "Board",
+    "write": "Write",
+    "newPost": "New Post",
+    "titleLabel": "Title",
+    "contentLabel": "Content",
+    "titlePlaceholder": "Enter a title",
+    "contentPlaceholder": "Enter your post",
+    "empty": "No posts yet",
+    "emptyDesc": "Be the first to write one",
+    "notFound": "Post not found",
+    "notFoundDesc": "This post was removed or does not exist",
+    "deleteConfirmTitle": "Delete Post",
+    "deleteConfirmDesc": "This will permanently delete the post",
+    "blockedError": "This content cannot be posted",
+    "submitError": "Something went wrong while submitting your post",
+    "backToList": "Back to list"
   },
   "asset": {
     "title": "Add Asset",

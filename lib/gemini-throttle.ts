@@ -21,6 +21,7 @@
 const LANE_INTERVAL_MS: Record<string, number> = {
   primary: 8000,
   translate: 10000,
+  moderation: 15000,
 };
 const DEFAULT_INTERVAL_MS = 8000;
 
