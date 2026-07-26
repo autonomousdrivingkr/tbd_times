@@ -71,7 +71,7 @@ async function callGemini(payloadJson: string): Promise<PortfolioCommentary | nu
     JSON.stringify(input),
   ].join("\n");
 
-  await reserveGeminiSlot();
+  await reserveGeminiSlot("commentary");
 
   let res: Response;
   try {
@@ -108,7 +108,7 @@ async function callGemini(payloadJson: string): Promise<PortfolioCommentary | nu
     const body = await res.text().catch(() => "");
     console.error(`[ai-commentary] status ${res.status}`, body.slice(0, 500));
     if (res.status === 429) {
-      pushBackGeminiSlot(parseRetryDelayMs(body));
+      pushBackGeminiSlot(parseRetryDelayMs(body), "commentary");
     }
     throw new CommentaryError(`gemini status ${res.status}`);
   }
