@@ -72,6 +72,13 @@ export async function generateJson(params: GenerateJsonParams): Promise<Generate
 
     const data = await callProvider(provider, lane, timeoutMs, params);
     if (data === undefined) continue; // 이 프로바이더 실패 — 다음으로
+    if (!isGemini) {
+      // 폴백이 실제로 발동해 성공한 흔치 않은 경우만 남긴다 — Gemini 성공은
+      // 압도적으로 흔한 정상 경로라 매번 로그를 남기면 소음만 커진다. 이
+      // 로그가 있어야 나중에 실제 폴백 키를 넣고 라이브 검증할 때 어떤
+      // 프로바이더가 응답했는지 바로 확인할 수 있다.
+      console.log(`[llm:${params.feature}:${provider.id}] fallback succeeded`);
+    }
     return { kind: "ok", data, provider: provider.id };
   }
 
