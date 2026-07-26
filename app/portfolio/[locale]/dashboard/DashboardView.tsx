@@ -31,10 +31,21 @@ interface QuoteData {
   name?: string;
 }
 
+interface Commentary {
+  summary: string;
+  strengths: string[];
+  risks: string[];
+}
+
 interface Props {
   portfolios: Portfolio[];
   quotes: Record<string, QuoteData>;
   usdKrw: number | null;
+  commentary: Commentary | null;
+  labelAiCommentaryTitle: string;
+  labelAiCommentaryStrengths: string;
+  labelAiCommentaryRisks: string;
+  labelAiCommentaryDisclaimer: string;
   title: string;
   labelTotalValue: string;
   labelTotalProfit: string;
@@ -66,7 +77,8 @@ function displaySymbol(symbol: string): string {
 const CUR_SYM: Record<string, string> = { KRW: "₩", USD: "$", JPY: "¥", EUR: "€", GBP: "£" };
 
 export default function DashboardView({
-  portfolios, quotes, usdKrw,
+  portfolios, quotes, usdKrw, commentary,
+  labelAiCommentaryTitle, labelAiCommentaryStrengths, labelAiCommentaryRisks, labelAiCommentaryDisclaimer,
   title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
   labelAllocation, labelMonthlyDividends, labelTotal, labelOther, labelAnnualTotal,
@@ -295,6 +307,51 @@ export default function DashboardView({
           icon={<svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
         />
       </div>
+
+      {/* AI 포트폴리오 코멘트 — 보유 구성 데이터만으로 생성한 관찰형 코멘트.
+          매수·매도 권유가 아니라는 점을 항상 함께 표시한다 */}
+      {commentary && (
+        <div className="mb-8 rounded-2xl border border-line bg-paper-2 p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent-soft text-accent shrink-0">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </span>
+            <h2 className="text-sm font-semibold text-ink-soft">{labelAiCommentaryTitle}</h2>
+          </div>
+          <p className="text-[15px] leading-relaxed text-ink">{commentary.summary}</p>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {commentary.strengths.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-emerald-600 mb-2">{labelAiCommentaryStrengths}</p>
+                <ul className="space-y-1.5 text-sm text-ink-soft">
+                  {commentary.strengths.map((s) => (
+                    <li key={s} className="flex gap-2">
+                      <span className="text-emerald-600">•</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {commentary.risks.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-amber-600 mb-2">{labelAiCommentaryRisks}</p>
+                <ul className="space-y-1.5 text-sm text-ink-soft">
+                  {commentary.risks.map((r) => (
+                    <li key={r} className="flex gap-2">
+                      <span className="text-amber-600">•</span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <p className="mt-4 text-xs text-muted border-t border-line pt-3">{labelAiCommentaryDisclaimer}</p>
+        </div>
+      )}
 
       {/* 포트폴리오 목록 */}
       <div className="flex items-center justify-between mb-4">

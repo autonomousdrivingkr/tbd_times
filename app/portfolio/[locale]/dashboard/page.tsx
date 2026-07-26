@@ -2,6 +2,7 @@ import { auth } from "@/lib/portfolio/auth";
 import { prisma } from "@/lib/portfolio/db";
 import { getTranslations } from "next-intl/server";
 import { getMultipleQuotes, getQuote } from "@/lib/portfolio/market";
+import { getPortfolioCommentary } from "@/lib/portfolio/ai-commentary";
 import DashboardView from "./DashboardView";
 
 export default async function DashboardPage() {
@@ -22,11 +23,18 @@ export default async function DashboardPage() {
   const fxQuote = await getQuote("USDKRW=X");
   const usdKrw = fxQuote?.price ?? null;
 
+  const commentary = await getPortfolioCommentary(portfolios, quotes, usdKrw);
+
   return (
     <DashboardView
       portfolios={portfolios}
       quotes={quotes}
       usdKrw={usdKrw}
+      commentary={commentary}
+      labelAiCommentaryTitle={t("dashboard.aiCommentaryTitle")}
+      labelAiCommentaryStrengths={t("dashboard.aiCommentaryStrengths")}
+      labelAiCommentaryRisks={t("dashboard.aiCommentaryRisks")}
+      labelAiCommentaryDisclaimer={t("dashboard.aiCommentaryDisclaimer")}
       title={t("dashboard.title")}
       labelTotalValue={t("dashboard.totalValue")}
       labelTotalProfit={t("dashboard.totalProfit")}

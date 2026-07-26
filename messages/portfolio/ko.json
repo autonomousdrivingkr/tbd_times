@@ -64,7 +64,11 @@
     "total": "총 자산",
     "other": "기타",
     "annualTotal": "연간 총",
-    "holdingsSummary": "보유 종목 합산"
+    "holdingsSummary": "보유 종목 합산",
+    "aiCommentaryTitle": "AI 포트폴리오 코멘트",
+    "aiCommentaryStrengths": "눈에 띄는 점",
+    "aiCommentaryRisks": "주의 깊게 볼 점",
+    "aiCommentaryDisclaimer": "AI가 보유 구성 데이터만으로 생성한 참고용 코멘트이며, 투자 자문이 아닙니다. 투자 판단과 책임은 본인에게 있습니다."
   },
   "portfolio": {
     "title": "포트폴리오",
