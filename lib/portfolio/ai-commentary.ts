@@ -100,26 +100,39 @@ async function callGemini(payloadJson: string): Promise<PortfolioCommentary | nu
         signal: AbortSignal.timeout(25000),
       }
     );
-  } catch {
+  } catch (err) {
+    console.error("[ai-commentary] fetch failed", err);
     throw new CommentaryError("gemini fetch failed");
   }
   if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`[ai-commentary] status ${res.status}`, body.slice(0, 500));
     if (res.status === 429) {
-      const body = await res.text().catch(() => "");
       pushBackGeminiSlot(parseRetryDelayMs(body));
     }
     throw new CommentaryError(`gemini status ${res.status}`);
   }
   const data = await res.json();
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new CommentaryError("gemini empty response");
+  if (!text) {
+    console.error(
+      "[ai-commentary] empty response",
+      JSON.stringify({
+        finishReason: data?.candidates?.[0]?.finishReason,
+        promptFeedback: data?.promptFeedback,
+      })
+    );
+    throw new CommentaryError("gemini empty response");
+  }
   let parsed: PortfolioCommentary;
   try {
     parsed = JSON.parse(text) as PortfolioCommentary;
   } catch {
+    console.error("[ai-commentary] bad json", text.slice(0, 300));
     throw new CommentaryError("gemini bad json");
   }
   if (!parsed.summary || !Array.isArray(parsed.strengths) || !Array.isArray(parsed.risks)) {
+    console.error("[ai-commentary] incomplete", JSON.stringify(parsed).slice(0, 300));
     throw new CommentaryError("gemini incomplete");
   }
   return parsed;
@@ -201,7 +214,8 @@ export async function getPortfolioCommentary(
 
   try {
     return await cachedCommentary(JSON.stringify(payload));
-  } catch {
+  } catch (err) {
+    console.error("[ai-commentary] getPortfolioCommentary failed", err);
     return null;
   }
 }
