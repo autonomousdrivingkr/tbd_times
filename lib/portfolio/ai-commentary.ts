@@ -1,8 +1,9 @@
 import { unstable_cache } from "next/cache";
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "@/lib/gemini-throttle";
+import { generateJson } from "@/lib/llm-client";
 
-// 사용자의 실제 보유 구성을 바탕으로 Gemini 가 "이 포트폴리오는 이런 특징을
-// 가지고 있다"는 관찰형 코멘트를 생성한다. 절대 매수·매도 등 특정 행동을
+// 사용자의 실제 보유 구성을 바탕으로 LLM이 "이 포트폴리오는 이런 특징을
+// 가지고 있다"는 관찰형 코멘트를 생성한다(기본 Gemini, 실패/쿼터초과 시
+// llm-client.ts 가 다른 프로바이더로 폴백). 절대 매수·매도 등 특정 행동을
 // 권유하지 않는다 — analysis.ts(뉴스 해설)와 동일하게 이 사이트는 정보
 // 제공만 하고 투자 자문을 하지 않는다는 원칙을 그대로 따른다.
 //
@@ -11,7 +12,15 @@ import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "@/lib/
 // 24시간 동안 재사용된다. payload 에는 절대 금액(원화 자산 총액 등)을 넣지
 // 않고 비중(%)·수익률(%) 등 상대값만 담아 외부 API 로 보내는 정보를 최소화한다.
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const COMMENTARY_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    summary: { type: "STRING" },
+    strengths: { type: "ARRAY", items: { type: "STRING" } },
+    risks: { type: "ARRAY", items: { type: "STRING" } },
+  },
+  required: ["summary", "strengths", "risks"],
+};
 
 export interface PortfolioCommentary {
   /** 포트폴리오 전반적인 특징 2~3문장 */
@@ -40,9 +49,6 @@ interface CommentaryInput {
 }
 
 async function callGemini(payloadJson: string): Promise<PortfolioCommentary | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
   let input: CommentaryInput;
   try {
     input = JSON.parse(payloadJson);
@@ -71,66 +77,23 @@ async function callGemini(payloadJson: string): Promise<PortfolioCommentary | nu
     JSON.stringify(input),
   ].join("\n");
 
-  await reserveGeminiSlot("commentary");
-
-  let res: Response;
+  let result;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                summary: { type: "STRING" },
-                strengths: { type: "ARRAY", items: { type: "STRING" } },
-                risks: { type: "ARRAY", items: { type: "STRING" } },
-              },
-              required: ["summary", "strengths", "risks"],
-            },
-          },
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(25000),
-      }
-    );
+    result = await generateJson({
+      feature: "ai-commentary",
+      geminiLane: "commentary",
+      prompt,
+      temperature: 0.4,
+      geminiSchema: COMMENTARY_SCHEMA,
+      geminiTimeoutMs: 25000,
+    });
   } catch (err) {
-    console.error("[ai-commentary] fetch failed", err);
-    throw new CommentaryError("gemini fetch failed");
+    console.error("[ai-commentary] llm request failed", err);
+    throw new CommentaryError("llm request failed");
   }
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error(`[ai-commentary] status ${res.status}`, body.slice(0, 500));
-    if (res.status === 429) {
-      pushBackGeminiSlot(parseRetryDelayMs(body), "commentary");
-    }
-    throw new CommentaryError(`gemini status ${res.status}`);
-  }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    console.error(
-      "[ai-commentary] empty response",
-      JSON.stringify({
-        finishReason: data?.candidates?.[0]?.finishReason,
-        promptFeedback: data?.promptFeedback,
-      })
-    );
-    throw new CommentaryError("gemini empty response");
-  }
-  let parsed: PortfolioCommentary;
-  try {
-    parsed = JSON.parse(text) as PortfolioCommentary;
-  } catch {
-    console.error("[ai-commentary] bad json", text.slice(0, 300));
-    throw new CommentaryError("gemini bad json");
-  }
+  if (result.kind === "disabled") return null;
+
+  const parsed = result.data as PortfolioCommentary;
   if (!parsed.summary || !Array.isArray(parsed.strengths) || !Array.isArray(parsed.risks)) {
     console.error("[ai-commentary] incomplete", JSON.stringify(parsed).slice(0, 300));
     throw new CommentaryError("gemini incomplete");

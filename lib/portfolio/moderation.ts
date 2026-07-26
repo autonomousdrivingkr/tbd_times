@@ -1,13 +1,21 @@
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "@/lib/gemini-throttle";
+import { generateJson } from "@/lib/llm-client";
 import { prisma } from "@/lib/portfolio/db";
 
 // 게시판 글의 2차 방어선(비동기). 블록리스트를 통과한 글이 게시된 "뒤에"
-// Gemini 로 인신공격·괴롭힘·혐오발언·스팸 여부를 판별한다. 단순히 비판적이거나
+// LLM으로(기본 Gemini, 실패/쿼터초과 시 llm-client.ts 가 다른 프로바이더로
+// 폴백) 인신공격·괴롭힘·혐오발언·스팸 여부를 판별한다. 단순히 비판적이거나
 // 주제에서 벗어난 글은 걸러내지 않는다(오탐 최소화). 글마다 내용이 달라
 // 재사용될 payload 가 없으므로 ai-commentary.ts 와 달리 캐싱하지 않는다.
 // 실패해도(쿼터 초과 등) 글은 PUBLISHED 로 남는다(fail-open, 재시도 없음).
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODERATION_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    flagged: { type: "BOOLEAN" },
+    reason: { type: "STRING" },
+  },
+  required: ["flagged", "reason"],
+};
 
 interface ModerationResult {
   flagged: boolean;
@@ -17,9 +25,6 @@ interface ModerationResult {
 class ModerationError extends Error {}
 
 async function callGemini(title: string, content: string): Promise<ModerationResult | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
   const prompt = [
     "당신은 커뮤니티 게시판 운영자입니다. 아래 게시글이 다음 중 하나에 해당하는지 판단하세요:",
     "- 특정 개인이나 집단에 대한 인신공격, 비방, 괴롭힘",
@@ -42,65 +47,23 @@ async function callGemini(title: string, content: string): Promise<ModerationRes
     content,
   ].join("\n");
 
-  await reserveGeminiSlot("moderation");
-
-  let res: Response;
+  let result;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                flagged: { type: "BOOLEAN" },
-                reason: { type: "STRING" },
-              },
-              required: ["flagged", "reason"],
-            },
-          },
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(25000),
-      }
-    );
+    result = await generateJson({
+      feature: "moderation",
+      geminiLane: "moderation",
+      prompt,
+      temperature: 0.2,
+      geminiSchema: MODERATION_SCHEMA,
+      geminiTimeoutMs: 25000,
+    });
   } catch (err) {
-    console.error("[moderation] fetch failed", err);
-    throw new ModerationError("gemini fetch failed");
+    console.error("[moderation] llm request failed", err);
+    throw new ModerationError("llm request failed");
   }
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error(`[moderation] status ${res.status}`, body.slice(0, 500));
-    if (res.status === 429) {
-      pushBackGeminiSlot(parseRetryDelayMs(body), "moderation");
-    }
-    throw new ModerationError(`gemini status ${res.status}`);
-  }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    console.error(
-      "[moderation] empty response",
-      JSON.stringify({
-        finishReason: data?.candidates?.[0]?.finishReason,
-        promptFeedback: data?.promptFeedback,
-      })
-    );
-    throw new ModerationError("gemini empty response");
-  }
-  let parsed: ModerationResult;
-  try {
-    parsed = JSON.parse(text) as ModerationResult;
-  } catch {
-    console.error("[moderation] bad json", text.slice(0, 300));
-    throw new ModerationError("gemini bad json");
-  }
+  if (result.kind === "disabled") return null;
+
+  const parsed = result.data as ModerationResult;
   if (typeof parsed.flagged !== "boolean") {
     console.error("[moderation] incomplete", JSON.stringify(parsed).slice(0, 300));
     throw new ModerationError("gemini incomplete");

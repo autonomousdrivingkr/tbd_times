@@ -1,15 +1,25 @@
 import { unstable_cache } from "next/cache";
 import type { NewsItem } from "./rss";
 import { GLOSSARY, GLOSSARY_GROUPS, type Term } from "./glossary";
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { generateJson } from "./llm-client";
 import { isBuildPhase } from "./build-phase";
 
-// 뉴스 브리핑 상세 페이지용 한국어 해설을 Gemini 로 생성한다.
+// 뉴스 브리핑 상세 페이지용 한국어 해설을 LLM 으로 생성한다(기본 Gemini,
+// 실패/쿼터초과 시 llm-client.ts 가 다른 프로바이더로 폴백).
 // - 원문 요약을 넘어서 배경·맥락·시사점을 덧붙이는 것이 목적 (자체 콘텐츠).
-// - GEMINI_API_KEY 가 없거나 실패하면 null (페이지는 요약만으로 표시).
+// - 설정된 프로바이더가 하나도 없거나 전부 실패하면 null (페이지는 요약만으로 표시).
 // - 기사 단위로 7일 캐싱: 같은 기사 해설은 한 번만 생성한다.
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const ANALYSIS_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    lead: { type: "STRING" },
+    background: { type: "STRING" },
+    points: { type: "ARRAY", items: { type: "STRING" } },
+    outlook: { type: "STRING" },
+  },
+  required: ["lead", "background", "points", "outlook"],
+};
 
 export interface Analysis {
   /** 기사 핵심을 풀어 쓴 도입부 (2~3문장) */
@@ -26,9 +36,6 @@ export interface Analysis {
 class AnalysisError extends Error {}
 
 async function callGemini(payloadJson: string): Promise<Analysis | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
   let input: { title: string; summary: string; source: string };
   try {
     input = JSON.parse(payloadJson);
@@ -53,55 +60,21 @@ async function callGemini(payloadJson: string): Promise<Analysis | null> {
     JSON.stringify(input),
   ].join("\n");
 
-  await reserveGeminiSlot();
+  let result;
+  try {
+    result = await generateJson({
+      feature: "analysis",
+      prompt,
+      temperature: 0.4,
+      geminiSchema: ANALYSIS_SCHEMA,
+      geminiTimeoutMs: 25000,
+    });
+  } catch {
+    throw new AnalysisError("llm request failed");
+  }
+  if (result.kind === "disabled") return null;
 
-  let res: Response;
-  try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                lead: { type: "STRING" },
-                background: { type: "STRING" },
-                points: { type: "ARRAY", items: { type: "STRING" } },
-                outlook: { type: "STRING" },
-              },
-              required: ["lead", "background", "points", "outlook"],
-            },
-          },
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(25000),
-      }
-    );
-  } catch {
-    throw new AnalysisError("gemini fetch failed");
-  }
-  if (!res.ok) {
-    if (res.status === 429) {
-      const body = await res.text().catch(() => "");
-      pushBackGeminiSlot(parseRetryDelayMs(body));
-    }
-    throw new AnalysisError(`gemini status ${res.status}`);
-  }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new AnalysisError("gemini empty response");
-  let parsed: Analysis;
-  try {
-    parsed = JSON.parse(text) as Analysis;
-  } catch {
-    throw new AnalysisError("gemini bad json");
-  }
+  const parsed = result.data as Analysis;
   // 스키마상 유효하지 않으면 재시도 대상으로 간주(캐시 방지)
   if (!parsed.lead || !parsed.background || !Array.isArray(parsed.points)) {
     throw new AnalysisError("gemini incomplete");

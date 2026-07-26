@@ -1,15 +1,14 @@
 import { getNews } from "./rss";
 import { translateItems } from "./translate";
 import { resolveImages } from "./images";
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { generateJson } from "./llm-client";
+import { PROVIDERS, isProviderConfigured } from "./llm-providers";
 
 // 매일 자동으로 "편집장 노트" 성격의 블로그 초안을 생성한다.
 // - 단순 뉴스 재탕이 아니라 그날 뉴스를 관통하는 흐름·시사점을 짚는 에디토리얼을 목표로 한다.
 // - 절대 자동 발행하지 않는다: 결과는 항상 status "draft" 로 저장되고, 관리자가
 //   /admin/blog 에서 검토·수정 후 직접 발행 버튼을 눌러야 공개된다(애드센스의 대량
 //   자동생성 콘텐츠 정책 위험을 피하기 위한 의도적 설계).
-
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 export interface GeneratedDraft {
   title: string;
@@ -32,11 +31,25 @@ interface RawDraft {
   imageRefIndex?: number;
 }
 
+const BLOG_DRAFT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    title: { type: "STRING" },
+    summary: { type: "STRING" },
+    category: { type: "STRING" },
+    tags: { type: "ARRAY", items: { type: "STRING" } },
+    markdown: { type: "STRING" },
+    imageRefIndex: { type: "INTEGER" },
+  },
+  required: ["title", "summary", "category", "tags", "markdown", "imageRefIndex"],
+};
+
 class BlogGenError extends Error {}
 
 export async function generateDailyBlogDraft(): Promise<GeneratedDraft | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  // 설정된 프로바이더가 하나도 없으면 RSS 조회·번역·이미지 해석 같은 비용이 드는
+  // 작업을 시작하기 전에 바로 빠져나간다(기존 "API 키 없으면 즉시 null" 동작 보존).
+  if (!PROVIDERS.some(isProviderConfigured)) return null;
 
   const all = await getNews();
   if (all.length === 0) return null;
@@ -73,57 +86,21 @@ export async function generateDailyBlogDraft(): Promise<GeneratedDraft | null> {
     JSON.stringify(payload),
   ].join("\n");
 
-  await reserveGeminiSlot();
+  let result;
+  try {
+    result = await generateJson({
+      feature: "blog-generator",
+      prompt,
+      temperature: 0.6,
+      geminiSchema: BLOG_DRAFT_SCHEMA,
+      geminiTimeoutMs: 30000,
+    });
+  } catch {
+    throw new BlogGenError("llm request failed");
+  }
+  if (result.kind === "disabled") return null;
 
-  let res: Response;
-  try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.6,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                title: { type: "STRING" },
-                summary: { type: "STRING" },
-                category: { type: "STRING" },
-                tags: { type: "ARRAY", items: { type: "STRING" } },
-                markdown: { type: "STRING" },
-                imageRefIndex: { type: "INTEGER" },
-              },
-              required: ["title", "summary", "category", "tags", "markdown", "imageRefIndex"],
-            },
-          },
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(30000),
-      }
-    );
-  } catch {
-    throw new BlogGenError("gemini fetch failed");
-  }
-  if (!res.ok) {
-    if (res.status === 429) {
-      const body = await res.text().catch(() => "");
-      pushBackGeminiSlot(parseRetryDelayMs(body));
-    }
-    throw new BlogGenError(`gemini status ${res.status}`);
-  }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new BlogGenError("gemini empty response");
-  let parsed: RawDraft;
-  try {
-    parsed = JSON.parse(text) as RawDraft;
-  } catch {
-    throw new BlogGenError("gemini bad json");
-  }
+  const parsed = result.data as RawDraft;
   if (!parsed.title || !parsed.markdown) throw new BlogGenError("gemini incomplete");
 
   // 모델이 고른 기사에 이미지가 없으면(썸네일 조회 실패 등) 목록에서 이미지가

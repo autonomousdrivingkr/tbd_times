@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import type { Place } from "./naver-local";
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { generateJson } from "./llm-client";
 import { isBuildPhase } from "./build-phase";
 
 // 맛집 카드마다 "왜 이 목록에 실렸는지" 짧게 소개하는 글을 Gemini 로 생성한다.
@@ -13,8 +13,6 @@ import { isBuildPhase } from "./build-phase";
 // - GEMINI_API_KEY 가 없거나 실패하면 빈 결과(카드는 네이버 자체 설명만 표시).
 // - 지역 단위로 60일 캐싱: 업체 목록은 자주 바뀌지 않으므로 자주 재생성할 필요가 없다.
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
 class FoodReasonError extends Error {}
 
 interface ReasonInput {
@@ -23,9 +21,6 @@ interface ReasonInput {
 }
 
 async function callGemini(payloadJson: string): Promise<Record<string, string> | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
   let input: ReasonInput;
   try {
     input = JSON.parse(payloadJson);
@@ -52,49 +47,24 @@ async function callGemini(payloadJson: string): Promise<Record<string, string> |
     JSON.stringify(input.places),
   ].join("\n");
 
-  await reserveGeminiSlot();
-
-  let res: Response;
+  let result;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json",
-          },
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(25000),
-      }
-    );
+    result = await generateJson({
+      feature: "food-reason",
+      prompt,
+      temperature: 0.4,
+      geminiTimeoutMs: 25000,
+    });
   } catch {
-    throw new FoodReasonError("gemini fetch failed");
+    throw new FoodReasonError("llm request failed");
   }
-  if (!res.ok) {
-    if (res.status === 429) {
-      const body = await res.text().catch(() => "");
-      pushBackGeminiSlot(parseRetryDelayMs(body));
-    }
-    throw new FoodReasonError(`gemini status ${res.status}`);
+  if (result.kind === "disabled") return null;
+
+  const parsed = result.data;
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new FoodReasonError("gemini bad shape");
   }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new FoodReasonError("gemini empty response");
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      throw new FoodReasonError("gemini bad shape");
-    }
-    return parsed as Record<string, string>;
-  } catch (err) {
-    if (err instanceof FoodReasonError) throw err;
-    throw new FoodReasonError("gemini bad json");
-  }
+  return parsed as Record<string, string>;
 }
 
 // 지역(payload) 단위로 캐싱. 같은 지역의 같은 업체 목록은 60일에 한 번만 생성한다.

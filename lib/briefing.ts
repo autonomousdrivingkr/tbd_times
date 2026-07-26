@@ -2,14 +2,34 @@ import { unstable_cache } from "next/cache";
 import { getNews, type NewsItem } from "./rss";
 import { translateItems } from "./translate";
 import { newsPath } from "./slug";
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { generateJson } from "./llm-client";
 import { archiveBriefing, getArchivedBriefing } from "./briefing-archive";
 import { isBuildPhase } from "./build-phase";
 
 // 데일리 브리핑 칼럼: 오늘의 주요 뉴스를 3가지 테마로 묶어 해설하는 자체 에디토리얼.
 // KST 날짜 단위로 캐싱되어 하루 한 번만 생성된다 (아침 Cron 의 tag 무효화 시 재생성).
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const BRIEFING_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    headline: { type: "STRING" },
+    intro: { type: "STRING" },
+    sections: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          title: { type: "STRING" },
+          body: { type: "STRING" },
+          refs: { type: "ARRAY", items: { type: "INTEGER" } },
+        },
+        required: ["title", "body", "refs"],
+      },
+    },
+    closing: { type: "STRING" },
+  },
+  required: ["headline", "intro", "sections", "closing"],
+};
 
 export interface BriefingRef {
   title: string;
@@ -55,9 +75,6 @@ class BriefingError extends Error {}
 async function callGemini(
   items: { i: number; t: string; s: string; src: string }[]
 ): Promise<RawBriefing | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
   const prompt = [
     "당신은 한국 독자를 위한 아침 뉴스레터 편집자입니다.",
     "아래 오늘의 주요 기사 목록(i=인덱스, t=제목, s=요약, src=출처)을 읽고 '오늘의 브리핑' 칼럼을 한국어로 작성하세요.",
@@ -75,66 +92,21 @@ async function callGemini(
     JSON.stringify(items),
   ].join("\n");
 
-  await reserveGeminiSlot();
+  let result;
+  try {
+    result = await generateJson({
+      feature: "briefing",
+      prompt,
+      temperature: 0.4,
+      geminiSchema: BRIEFING_SCHEMA,
+      geminiTimeoutMs: 30000,
+    });
+  } catch {
+    throw new BriefingError("llm request failed");
+  }
+  if (result.kind === "disabled") return null;
 
-  let res: Response;
-  try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                headline: { type: "STRING" },
-                intro: { type: "STRING" },
-                sections: {
-                  type: "ARRAY",
-                  items: {
-                    type: "OBJECT",
-                    properties: {
-                      title: { type: "STRING" },
-                      body: { type: "STRING" },
-                      refs: { type: "ARRAY", items: { type: "INTEGER" } },
-                    },
-                    required: ["title", "body", "refs"],
-                  },
-                },
-                closing: { type: "STRING" },
-              },
-              required: ["headline", "intro", "sections", "closing"],
-            },
-          },
-        }),
-        cache: "no-store", // 캐싱은 바깥 unstable_cache 가 담당
-        signal: AbortSignal.timeout(30000),
-      }
-    );
-  } catch {
-    throw new BriefingError("gemini fetch failed");
-  }
-  if (!res.ok) {
-    if (res.status === 429) {
-      const body = await res.text().catch(() => "");
-      pushBackGeminiSlot(parseRetryDelayMs(body));
-    }
-    throw new BriefingError(`gemini status ${res.status}`);
-  }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new BriefingError("gemini empty response");
-  let parsed: RawBriefing;
-  try {
-    parsed = JSON.parse(text) as RawBriefing;
-  } catch {
-    throw new BriefingError("gemini bad json");
-  }
+  const parsed = result.data as RawBriefing;
   if (!parsed.headline || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
     throw new BriefingError("gemini incomplete");
   }

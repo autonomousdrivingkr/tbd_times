@@ -1,10 +1,11 @@
 import { unstable_cache } from "next/cache";
 import type { NewsItem } from "./rss";
-import { reserveGeminiSlot, pushBackGeminiSlot, parseRetryDelayMs } from "./gemini-throttle";
+import { generateJson } from "./llm-client";
 import { isBuildPhase } from "./build-phase";
 
-// Google Gemini API 로 해외 기사 제목/요약을 한국어로 번역한다.
-// - GEMINI_API_KEY 가 없으면 원문을 그대로 사용(기능 비활성).
+// LLM(기본 Gemini, 실패/쿼터초과 시 llm-client.ts 가 다른 프로바이더로 폴백)
+// 로 해외 기사 제목/요약을 한국어로 번역한다.
+// - 설정된 프로바이더가 하나도 없으면 원문을 그대로 사용(기능 비활성).
 // - 동일한 배치는 unstable_cache 로 캐싱해 재생성마다 재호출하지 않는다.
 // - 무료 티어 요청 수를 아끼기 위해, 같은 프로세스(빌드 1회 실행) 안에서는
 //   기사 링크 단위 메모이제이션을 둔다. 홈/카테고리/토픽 페이지가 같은 인기
@@ -12,16 +13,34 @@ import { isBuildPhase } from "./build-phase";
 //   (배치 구성이 페이지마다 달라 unstable_cache 의 배치 단위 캐시만으로는
 //   이 중복을 못 잡는다).
 // - 번역은 사이트 전체에서 가장 호출 빈도가 높아, analysis.ts(해설)·briefing.ts
-//   와 큐를 완전히 공유하면 해설 생성이 번역 트래픽에 밀려 실패하기 쉽다(해설
-//   실패는 /news/[slug] 가 noindex 처리되는 것으로 직결). 그래서 별도
-//   gemini-throttle 레인("translate")을 쓴다 — 모델은 GEMINI_MODEL 과 동일하게
-//   둔다(별도 경량 모델로 분리를 시도했다가 그 모델이 이미 "신규 사용자에게
-//   제공되지 않는" 상태라 번역 전체가 깨진 적이 있다. 레인 분리만으로도 각
-//   레인이 독립적인 최소 처리량을 보장받으므로 모델까지 바꿀 필요는 없다).
+//   와 Gemini 큐를 완전히 공유하면 해설 생성이 번역 트래픽에 밀려 실패하기
+//   쉽다(해설 실패는 /news/[slug] 가 noindex 처리되는 것으로 직결). 그래서
+//   별도 llm-throttle 레인("translate")을 쓴다 — 모델은 GEMINI_MODEL 과
+//   동일하게 둔다(별도 경량 모델로 분리를 시도했다가 그 모델이 이미 "신규
+//   사용자에게 제공되지 않는" 상태라 번역 전체가 깨진 적이 있다. 레인
+//   분리만으로도 각 레인이 독립적인 최소 처리량을 보장받으므로 모델까지
+//   바꿀 필요는 없다).
 const processMemo = new Map<string, { t: string; s: string }>();
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const LANE = "translate";
+
+const TRANSLATE_SCHEMA = {
+  type: "ARRAY",
+  items: {
+    type: "OBJECT",
+    properties: { t: { type: "STRING" }, s: { type: "STRING" } },
+    required: ["t", "s"],
+  },
+};
+
+// 이미 공개된 뉴스 원문을 그대로 옮기는 번역 작업이므로, 전쟁·사건사고 등
+// 민감한 소재의 기사가 안전 필터에 막혀 배치 전체가 영어로 남는 것을 방지한다.
+const SAFETY_SETTINGS = [
+  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+];
 
 function hasHangul(text: string): boolean {
   return /[가-힣]/.test(text);
@@ -38,9 +57,6 @@ interface Pair {
 class TranslateError extends Error {}
 
 async function callGemini(payloadJson: string): Promise<Pair[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return [];
-
   let input: Pair[];
   try {
     input = JSON.parse(payloadJson);
@@ -60,78 +76,24 @@ async function callGemini(payloadJson: string): Promise<Pair[]> {
     JSON.stringify(input),
   ].join("\n");
 
-  await reserveGeminiSlot(LANE);
-
-  let res: Response;
+  let result;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          // 이미 공개된 뉴스 원문을 그대로 옮기는 번역 작업이므로, 전쟁·사건사고 등
-          // 민감한 소재의 기사가 안전 필터에 막혀 배치 전체가 영어로 남는 것을 방지한다.
-          safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: { t: { type: "STRING" }, s: { type: "STRING" } },
-                required: ["t", "s"],
-              },
-            },
-          },
-        }),
-        // 캐싱은 바깥 unstable_cache 가 전담(성공 결과만 저장). 실패 응답이
-        // Next fetch 캐시에 눌러앉지 않도록 여기서는 캐시하지 않는다.
-        cache: "no-store",
-        signal: AbortSignal.timeout(20000),
-      }
-    );
-  } catch (err) {
-    // 네트워크 오류·타임아웃 → 재시도 대상
-    console.error("[translate] fetch failed", err);
-    throw new TranslateError("gemini fetch failed");
-  }
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error(`[translate] status ${res.status}`, body.slice(0, 500));
-    if (res.status === 429) {
-      // 응답 메시지의 "retry in Ns" 힌트를 반영해 다음 호출들이 그만큼 더 기다리게 한다.
-      pushBackGeminiSlot(parseRetryDelayMs(body), LANE);
-    }
-    throw new TranslateError(`gemini status ${res.status}`);
-  }
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    console.error(
-      "[translate] empty response",
-      JSON.stringify({
-        finishReason: data?.candidates?.[0]?.finishReason,
-        promptFeedback: data?.promptFeedback,
-        candidateCount: data?.candidates?.length,
-      })
-    );
-    throw new TranslateError("gemini empty response");
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
+    result = await generateJson({
+      feature: "translate",
+      geminiLane: LANE,
+      prompt,
+      temperature: 0.2,
+      geminiSchema: TRANSLATE_SCHEMA,
+      geminiSafetySettings: SAFETY_SETTINGS,
+      geminiTimeoutMs: 20000,
+    });
   } catch {
-    console.error("[translate] bad json", text.slice(0, 300));
-    throw new TranslateError("gemini bad json");
+    // 네트워크 오류·타임아웃·전체 프로바이더 실패 → 재시도 대상
+    throw new TranslateError("llm request failed");
   }
+  if (result.kind === "disabled") return [];
+
+  const parsed = result.data;
   if (!Array.isArray(parsed)) throw new TranslateError("gemini bad shape");
   return parsed as Pair[];
 }
