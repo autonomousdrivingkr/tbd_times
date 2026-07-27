@@ -62,7 +62,12 @@ export const PROVIDERS: ProviderConfig[] = [
     id: "openrouter",
     envKeyVar: "OPENROUTER_API_KEY",
     envModelVar: "OPENROUTER_MODEL",
-    defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+    // 2026-07-27 라이브 확인: meta-llama/llama-3.3-70b-instruct:free 는
+    // 더 이상 무료로 제공되지 않아(404, 유료 슬러그 안내) openai/gpt-oss-20b:free
+    // 로 교체. JSON 모드·한국어 번역 품질 모두 실측 확인함(OpenRouter 무료
+    // 모델 목록은 수시로 바뀌므로 이 값도 검증되지 않은 채 방치하면 다시
+    // 깨질 수 있다 — 주기적으로 재확인 필요).
+    defaultModel: "openai/gpt-oss-20b:free",
     kind: "openai-chat",
     baseUrl: "https://openrouter.ai/api/v1/chat/completions",
   },
