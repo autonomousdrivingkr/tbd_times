@@ -48,7 +48,12 @@ export default async function InvestmentPage() {
   const unique = Array.from(new Map(displayed.map((i) => [i.link, i])).values());
   const prepared = await resolveImages(await translateItems(unique));
   const pmap = new Map(prepared.map((i) => [i.link, i]));
-  const tl = (arr: NewsItem[]) => arr.map((i) => pmap.get(i.link) ?? i);
+  // 번역이 필요했는데 실패/비활성으로 원문(영어 등)이 그대로 남은 항목은 제외한다
+  // — 애드센스 "가치 낮은 콘텐츠" 반려 원인으로 지목된, 번역 안 된 외국어 기사가
+  // 한국어 사이트에 섞여 보이는 문제를 막기 위함. 쿼터가 회복되면 다음 재생성 때
+  // 자동으로 다시 노출된다.
+  const tl = (arr: NewsItem[]) =>
+    arr.map((i) => pmap.get(i.link) ?? i).filter((i) => i.translated !== false);
 
   return (
     <div className="container-page py-8">
@@ -69,20 +74,24 @@ export default async function InvestmentPage() {
 
       <MarketDashboard />
 
-      {relatedSections.map(({ topic, items }) => (
-        <section key={topic.slug} className="mb-12">
-          <SectionHeading
-            title={`${topic.emoji} ${topic.label}`}
-            subtitle={topic.description}
-            accent={CATEGORY_ACCENT.investment}
-          />
-          <div className="grid gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-            {tl(items).map((item) => (
-              <NewsCard key={item.link} item={item} variant="compact" showCategory={false} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {relatedSections.map(({ topic, items }) => {
+        const shown = tl(items);
+        if (shown.length === 0) return null;
+        return (
+          <section key={topic.slug} className="mb-12">
+            <SectionHeading
+              title={`${topic.emoji} ${topic.label}`}
+              subtitle={topic.description}
+              accent={CATEGORY_ACCENT.investment}
+            />
+            <div className="grid gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+              {shown.map((item) => (
+                <NewsCard key={item.link} item={item} variant="compact" showCategory={false} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
       <NewsFeed items={tl(mainItems)} showCategory={false} />
     </div>

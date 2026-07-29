@@ -130,10 +130,12 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     if (it.ko || hasHangul(it.title)) {
       it.titleKo = it.title;
       it.summaryKo = it.summary;
+      it.translated = true;
     } else if (memo) {
       // 같은 빌드 안에서 다른 페이지가 이미 번역한 기사 — API 호출 없이 재사용
       it.titleKo = memo.t;
       it.summaryKo = memo.s;
+      it.translated = true;
     } else {
       needIdx.push(idx);
     }
@@ -147,6 +149,7 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     needIdx.forEach((i) => {
       result[i].titleKo = result[i].title;
       result[i].summaryKo = result[i].summary;
+      result[i].translated = false;
     });
     return result;
   }
@@ -156,6 +159,7 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
     needIdx.forEach((i) => {
       result[i].titleKo = result[i].title;
       result[i].summaryKo = result[i].summary;
+      result[i].translated = false;
     });
     return result;
   }
@@ -177,6 +181,7 @@ export async function translateItems(items: NewsItem[]): Promise<NewsItem[]> {
         const s = tr?.s?.trim() || result[i].summary;
         result[i].titleKo = t;
         result[i].summaryKo = s;
+        result[i].translated = !!tr;
         // 성공한 번역만 기억한다(실패 시 원문 그대로라 재시도 여지를 남겨야 함).
         if (tr) processMemo.set(result[i].link, { t, s });
       });

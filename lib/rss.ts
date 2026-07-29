@@ -18,6 +18,12 @@ export interface NewsItem {
   titleKo?: string;
   /** 번역된 한국어 요약 */
   summaryKo?: string;
+  /**
+   * titleKo/summaryKo 가 실제로 한국어인지 여부. 원문이 이미 한국어이거나
+   * 번역에 성공했으면 true, 번역이 필요했지만 실패/비활성으로 원문(영어 등)을
+   * 그대로 쓴 경우 false. translateItems() 를 거친 항목에만 채워진다.
+   */
+  translated?: boolean;
 }
 
 type FeedItem = {
