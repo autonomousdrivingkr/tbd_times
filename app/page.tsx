@@ -60,7 +60,11 @@ export default async function HomePage() {
   const prepared = await resolveImages(await translateItems(unique));
   const pmap = new Map(prepared.map((i) => [i.link, i]));
   const t = (item?: NewsItem) => (item ? pmap.get(item.link) ?? item : undefined);
-  const tl = (arr: NewsItem[]) => arr.map((i) => pmap.get(i.link) ?? i);
+  // 번역이 필요했는데 실패/비활성으로 원문(영어 등)이 그대로 남은 항목은 목록에서
+  // 제외한다(홈 화면 섹션 카드·사이드바 대상 — 애드센스 "가치 낮은 콘텐츠" 재반려
+  // 대응). 쿼터가 회복되면 다음 재생성 때 자동으로 다시 노출된다.
+  const tl = (arr: NewsItem[]) =>
+    arr.map((i) => pmap.get(i.link) ?? i).filter((i) => i.translated !== false);
 
   const lead = t(leadRaw);
   const sidebar = tl(sidebarRaw);

@@ -41,7 +41,10 @@ export default async function TopicPage({
 
   const all = await getNews();
   const filtered = filterByTopic(all, topic).slice(0, 45);
-  const items = await resolveImages(await translateItems(filtered));
+  const translated = await translateItems(filtered);
+  // 번역 실패로 원문(영어 등)이 그대로 남은 항목은 제외 — 홈 화면 섹션 카드와
+  // 동일한 처리. 쿼터가 회복되면 다음 재생성 때 자동으로 다시 노출된다.
+  const items = await resolveImages(translated.filter((it) => it.translated !== false));
 
   return (
     <div className="container-page py-8">
