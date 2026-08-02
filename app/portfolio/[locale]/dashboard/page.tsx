@@ -2,7 +2,6 @@ import { auth } from "@/lib/portfolio/auth";
 import { prisma } from "@/lib/portfolio/db";
 import { getTranslations } from "next-intl/server";
 import { getMultipleQuotes, getQuote } from "@/lib/portfolio/market";
-import { getPortfolioCommentary } from "@/lib/portfolio/ai-commentary";
 import DashboardView from "./DashboardView";
 
 export default async function DashboardPage() {
@@ -23,14 +22,13 @@ export default async function DashboardPage() {
   const fxQuote = await getQuote("USDKRW=X");
   const usdKrw = fxQuote?.price ?? null;
 
-  const commentary = await getPortfolioCommentary(portfolios, quotes, usdKrw);
-
+  // AI 코멘트는 여기서 await 하지 않는다 — /api/portfolio/ai-commentary 에서
+  // 클라이언트가 별도로 가져온다(사유: DashboardView.tsx 주석 참고).
   return (
     <DashboardView
       portfolios={portfolios}
       quotes={quotes}
       usdKrw={usdKrw}
-      commentary={commentary}
       labelAiCommentaryTitle={t("dashboard.aiCommentaryTitle")}
       labelAiCommentaryStrengths={t("dashboard.aiCommentaryStrengths")}
       labelAiCommentaryRisks={t("dashboard.aiCommentaryRisks")}

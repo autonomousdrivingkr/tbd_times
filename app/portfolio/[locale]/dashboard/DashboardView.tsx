@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import DashboardCharts, { type AssetSlice, type MonthlyBar } from "./DashboardCharts";
@@ -41,7 +41,6 @@ interface Props {
   portfolios: Portfolio[];
   quotes: Record<string, QuoteData>;
   usdKrw: number | null;
-  commentary: Commentary | null;
   labelAiCommentaryTitle: string;
   labelAiCommentaryStrengths: string;
   labelAiCommentaryRisks: string;
@@ -77,7 +76,7 @@ function displaySymbol(symbol: string): string {
 const CUR_SYM: Record<string, string> = { KRW: "₩", USD: "$", JPY: "¥", EUR: "€", GBP: "£" };
 
 export default function DashboardView({
-  portfolios, quotes, usdKrw, commentary,
+  portfolios, quotes, usdKrw,
   labelAiCommentaryTitle, labelAiCommentaryStrengths, labelAiCommentaryRisks, labelAiCommentaryDisclaimer,
   title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
@@ -88,6 +87,24 @@ export default function DashboardView({
   const [displayCur, setDisplayCur] = useState<DisplayCurrency>("KRW");
   const [holdingsSortKey, setHoldingsSortKey] = useState<HoldingSortKey>("value");
   const [holdingsSortDir, setHoldingsSortDir] = useState<SortDir>("desc");
+
+  // AI 코멘트는 대시보드 핵심 데이터와 분리해 마운트 후 별도로 가져온다 —
+  // Gemini·폴백 프로바이더가 전부 느리거나 실패해도(최악 수십 초) 나머지
+  // 대시보드는 이미 떠 있는 상태라 영향받지 않는다. 실패/미설정 시 그냥
+  // null로 남아 카드가 렌더되지 않는다(기존 fail-open 동작과 동일).
+  const [commentary, setCommentary] = useState<Commentary | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/portfolio/ai-commentary")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.commentary) setCommentary(data.commentary);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handleHoldingsSort(key: HoldingSortKey) {
     if (holdingsSortKey === key) {
