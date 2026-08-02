@@ -3,6 +3,8 @@
 // - 지역별 검색어를 순회해 결과를 모으고 중복을 제거한다.
 // - 응답은 최대 24시간 캐싱(맛집 정보는 뉴스처럼 자주 바뀌지 않음).
 
+import type { BlogRef } from "./naver-blog";
+
 export interface Place {
   /** 상호명 + 도로명주소 기반 중복 제거 키 */
   id: string;
@@ -19,8 +21,10 @@ export interface Place {
   mapUrl: string;
   /** 업체 홈페이지 등 네이버가 반환한 링크 (없을 수 있음) */
   link: string;
-  /** 왜 이 목록에 실렸는지 짧게 소개하는 글 (Gemini 생성, lib/food-reason.ts) */
+  /** 블로그 후기를 근거로 왜 이 목록에 실렸는지 소개하는 글 (Gemini 생성, lib/food-reason.ts) */
   reason?: string;
+  /** 이 업체를 다룬 네이버 블로그 후기 (app/food/page.tsx 에서 채움) */
+  blogPosts?: BlogRef[];
 }
 
 // 검색에 사용할 지역 목록. "지역명 맛집" 형태로 질의한다.

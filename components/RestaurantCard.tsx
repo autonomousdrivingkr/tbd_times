@@ -18,6 +18,23 @@ export default function RestaurantCard({ place }: { place: Place }) {
           {place.reason || place.description}
         </p>
       )}
+      {place.blogPosts && place.blogPosts.length > 0 && (
+        <div className="mt-3 space-y-1.5 border-t border-line pt-2.5">
+          <p className="text-[11px] font-semibold text-muted">관련 블로그 후기</p>
+          {place.blogPosts.slice(0, 2).map((b) => (
+            <a
+              key={b.link}
+              href={b.link}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="block text-xs text-ink-soft hover:text-accent transition-colors"
+            >
+              <span className="line-clamp-1">{b.title}</span>
+              {b.bloggerName && <span className="text-muted"> · {b.bloggerName}</span>}
+            </a>
+          ))}
+        </div>
+      )}
       <div className="mt-3 space-y-1 text-xs text-muted">
         {(place.roadAddress || place.address) && (
           <p className="line-clamp-1">📍 {place.roadAddress || place.address}</p>
