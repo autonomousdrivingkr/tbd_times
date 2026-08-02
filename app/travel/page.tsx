@@ -6,6 +6,9 @@ export const revalidate = 1800;
 export const metadata: Metadata = {
   title: "여행 뉴스",
   description: "국내외 여행지·항공·호텔·레저 소식을 매일 아침 모아서 정리합니다.",
+  // 외부 RSS 헤드라인·요약을 나열하는 순수 아그리게이션 페이지라, 저가치
+  // 콘텐츠로 비치지 않도록 검색 색인에서 제외한다.
+  robots: { index: false, follow: true },
 };
 
 export default function TravelPage() {

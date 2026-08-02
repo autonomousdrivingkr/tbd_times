@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   title: "투자 뉴스",
   description:
     "미국·한국 증시 지수, 금·유가·금리·환율 등 거시경제 지표 대시보드와 연준·금리·비트코인 소식을 포함해 글로벌 증시·금융·시장 소식을 매일 정리합니다.",
+  // 지표 대시보드는 있지만 본문 대부분이 외부 RSS 헤드라인·요약을 나열하는
+  // 아그리게이션이라, 저가치 콘텐츠로 비치지 않도록 검색 색인에서 제외한다.
+  robots: { index: false, follow: true },
 };
 
 const RELATED_TOPIC_LIMIT = 4;
