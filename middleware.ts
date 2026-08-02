@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { routing } from "@/i18n/routing";
 
 const LOCALE_COOKIE = "NEXT_LOCALE";
+const CANONICAL_HOST = "tibedra.com";
 
-// /portfolio 서브트리 전용 로케일 라우팅. next-intl의 createMiddleware는 로케일이
-// 경로 첫 세그먼트라고 가정해 /portfolio 하위 경로와 바로 맞지 않으므로, 여기서는
-// 실제로 필요한 두 가지만 직접 처리한다: (1) 로케일 없는 /portfolio 진입 시
-// 기본/저장된 로케일로 리다이렉트, (2) 방문한 로케일을 쿠키에 기억.
-// 나머지 사이트와 /api/* 는 matcher 밖이라 이 미들웨어를 아예 거치지 않는다.
+// www→apex 정규화. 세션 쿠키(next-auth)가 Domain 속성 없이(host-only) 발급되므로
+// tibedra.com에서 로그인한 뒤 www.tibedra.com으로 넘어가면(북마크·검색결과·공유링크 등)
+// 브라우저가 그 쿠키를 안 보내 로그인이 풀린 것처럼 보인다 — 두 호스트가 리다이렉트
+// 없이 각각 200을 응답하던 게 원인. 항상 apex 하나로만 접속하도록 강제해 이 불일치를
+// 원천 차단한다("사이트 다른 섹션 갔다 오면 로그인이 풀린다" 리포트의 실제 원인).
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host");
+
+  if (host === `www.${CANONICAL_HOST}`) {
+    const url = request.nextUrl.clone();
+    url.host = CANONICAL_HOST;
+    return NextResponse.redirect(url, 308);
+  }
 
   if (pathname === "/portfolio") {
     const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
@@ -30,5 +38,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/portfolio", "/portfolio/:path*"],
+  // www 리다이렉트는 사이트 전체에 적용돼야 하므로 정적 자산만 제외하고 전 경로를 매칭한다.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
