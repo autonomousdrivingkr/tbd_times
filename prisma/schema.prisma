@@ -78,6 +78,9 @@ model Asset {
   // 버킷에 넣을지는 사용자 본인의 투자 전략에 달린 주관적 판단이라
   // 알고리즘으로 추론할 수 없다. 미지정이면 null("미분류").
   rebalanceCategory RebalanceCategory?
+  // 이 종목이 어느 계좌(일반/ISA/연금저축/IRP/퇴직연금 IRP)에 들어있는지.
+  // 리밸런싱 분류와 마찬가지로 사용자가 직접 지정한다. 미지정이면 null.
+  accountType       AccountType?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -139,6 +142,14 @@ enum RebalanceCategory {
   DIVIDEND_GROWTH
   HIGH_YIELD_CASHCOW
   SAFE_ASSET
+}
+
+enum AccountType {
+  GENERAL
+  ISA
+  PENSION_SAVINGS
+  IRP
+  RETIREMENT_PENSION_IRP
 }
 
 enum TransactionType {

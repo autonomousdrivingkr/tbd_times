@@ -8,6 +8,9 @@ import DashboardCharts, { AllocationDonut, type AssetSlice, type MonthlyBar } fr
 const REBALANCE_CATEGORIES = ["GROWTH_ENGINE", "DIVIDEND_GROWTH", "HIGH_YIELD_CASHCOW", "SAFE_ASSET"] as const;
 type RebalanceCategory = (typeof REBALANCE_CATEGORIES)[number];
 
+const ACCOUNT_TYPES = ["GENERAL", "ISA", "PENSION_SAVINGS", "IRP", "RETIREMENT_PENSION_IRP"] as const;
+type AccountType = (typeof ACCOUNT_TYPES)[number];
+
 type DisplayCurrency = "KRW" | "USD";
 type HoldingSortKey = "shares" | "cost" | "value" | "ret" | "dividendYield";
 type SortDir = "asc" | "desc";
@@ -18,6 +21,7 @@ interface Asset {
   avgCost: number;
   currency: string;
   rebalanceCategory?: RebalanceCategory | null;
+  accountType?: AccountType | null;
 }
 
 interface Portfolio {
@@ -70,6 +74,13 @@ interface Props {
   labelCategoryHighYieldCashcow: string;
   labelCategorySafeAsset: string;
   labelCategoryUnclassified: string;
+  labelAccountTypeColumn: string;
+  labelAccountTypeGeneral: string;
+  labelAccountTypeIsa: string;
+  labelAccountTypePensionSavings: string;
+  labelAccountTypeIrp: string;
+  labelAccountTypeRetirementPensionIrp: string;
+  labelAccountTypeUnclassified: string;
   labelAssetName: string;
   labelAssetSymbol: string;
   labelShares: string;
@@ -95,6 +106,9 @@ export default function DashboardView({
   labelHoldingsSummary, labelRebalanceAllocation, labelCategoryColumn,
   labelCategoryGrowthEngine, labelCategoryDividendGrowth, labelCategoryHighYieldCashcow,
   labelCategorySafeAsset, labelCategoryUnclassified,
+  labelAccountTypeColumn, labelAccountTypeGeneral, labelAccountTypeIsa,
+  labelAccountTypePensionSavings, labelAccountTypeIrp, labelAccountTypeRetirementPensionIrp,
+  labelAccountTypeUnclassified,
   labelAssetName, labelAssetSymbol, labelShares, labelCost, labelValue, labelReturn,
 }: Props) {
   const locale = useLocale();
@@ -125,6 +139,25 @@ export default function DashboardView({
     } catch {
       // 네트워크 실패 시에도 화면은 이미 낙관적으로 바뀐 상태로 둔다 —
       // 다음 페이지 방문 때 서버 값과 다시 동기화된다.
+    }
+  }
+
+  // 계좌 구분(일반/ISA/연금저축/IRP/퇴직연금 IRP)도 리밸런싱 분류와 동일한
+  // 패턴 — 사용자가 직접 지정, symbol 단위로 그 사용자의 모든 포트폴리오에
+  // 걸친 동일 심볼 자산 전체에 반영, 낙관적 UI 갱신.
+  const [accountTypeOverrides, setAccountTypeOverrides] = useState<Record<string, AccountType | null>>({});
+
+  async function handleAccountTypeChange(symbol: string, value: string) {
+    const accountType = (value || null) as AccountType | null;
+    setAccountTypeOverrides((prev) => ({ ...prev, [symbol]: accountType }));
+    try {
+      await fetch("/api/portfolio/assets/account-type", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol, accountType }),
+      });
+    } catch {
+      // 네트워크 실패 시에도 화면은 이미 낙관적으로 바뀐 상태로 둔다.
     }
   }
 
@@ -196,7 +229,7 @@ export default function DashboardView({
   // 자산 배분 도넛차트와 하단 보유 종목 표가 이 집계를 함께 쓴다. 상위 15개 +
   // 나머지는 "기타"(도넛 전용, 팔레트는 15개 슬롯까지 있지만 매 슬라이스가
   // 범례에 이름과 함께 표시되므로 9번째부터는 색만으로 완전히 구분될 필요는 없다).
-  interface HoldingAgg { symbol: string; name: string; shares: number; cost: number; value: number; dividendYield?: number; category: RebalanceCategory | null }
+  interface HoldingAgg { symbol: string; name: string; shares: number; cost: number; value: number; dividendYield?: number; category: RebalanceCategory | null; accountType: AccountType | null }
   const holdingsBySymbol: Record<string, HoldingAgg> = {};
   for (const p of portfolios) {
     for (const a of p.assets) {
@@ -206,7 +239,7 @@ export default function DashboardView({
       if (!holdingsBySymbol[a.symbol]) {
         holdingsBySymbol[a.symbol] = {
           symbol: a.symbol, name: q?.name ?? a.symbol, shares: 0, cost: 0, value: 0,
-          dividendYield: q?.dividendYield, category: a.rebalanceCategory ?? null,
+          dividendYield: q?.dividendYield, category: a.rebalanceCategory ?? null, accountType: a.accountType ?? null,
         };
       }
       const h = holdingsBySymbol[a.symbol];
@@ -214,6 +247,7 @@ export default function DashboardView({
       if (isFinite(cost)) h.cost += cost * a.shares;
       if (isFinite(price)) h.value += price * a.shares;
       if (!h.category && a.rebalanceCategory) h.category = a.rebalanceCategory;
+      if (!h.accountType && a.accountType) h.accountType = a.accountType;
     }
   }
   const sortedHoldings = Object.values(holdingsBySymbol).sort((a, b) => b.value - a.value);
@@ -233,6 +267,12 @@ export default function DashboardView({
     const override = categoryOverrides[symbol];
     if (override !== undefined) return override;
     return holdingsBySymbol[symbol]?.category ?? null;
+  }
+
+  function accountTypeOf(symbol: string): AccountType | null {
+    const override = accountTypeOverrides[symbol];
+    if (override !== undefined) return override;
+    return holdingsBySymbol[symbol]?.accountType ?? null;
   }
 
   // 목표 리밸런싱 포트폴리오 — 성장 엔진/배당 성장/고배당 캐시카우/안전 자산
@@ -547,6 +587,7 @@ export default function DashboardView({
                       <HoldingsSortBtn col="dividendYield" label={labelDividendYield} />
                     </th>
                     <th className="text-left px-5 py-4 text-muted">{labelCategoryColumn}</th>
+                    <th className="text-left px-5 py-4 text-muted">{labelAccountTypeColumn}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -580,6 +621,20 @@ export default function DashboardView({
                           <option value="DIVIDEND_GROWTH">{labelCategoryDividendGrowth}</option>
                           <option value="HIGH_YIELD_CASHCOW">{labelCategoryHighYieldCashcow}</option>
                           <option value="SAFE_ASSET">{labelCategorySafeAsset}</option>
+                        </select>
+                      </td>
+                      <td className="px-5 py-4">
+                        <select
+                          value={accountTypeOf(h.symbol) ?? ""}
+                          onChange={(e) => handleAccountTypeChange(h.symbol, e.target.value)}
+                          className="bg-paper border border-line rounded-lg px-2 py-1.5 text-xs text-ink-soft focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                        >
+                          <option value="">{labelAccountTypeUnclassified}</option>
+                          <option value="GENERAL">{labelAccountTypeGeneral}</option>
+                          <option value="ISA">{labelAccountTypeIsa}</option>
+                          <option value="PENSION_SAVINGS">{labelAccountTypePensionSavings}</option>
+                          <option value="IRP">{labelAccountTypeIrp}</option>
+                          <option value="RETIREMENT_PENSION_IRP">{labelAccountTypeRetirementPensionIrp}</option>
                         </select>
                       </td>
                     </tr>

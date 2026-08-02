@@ -54,6 +54,13 @@ export default async function DashboardPage() {
       labelCategoryHighYieldCashcow={t("dashboard.categoryHighYieldCashcow")}
       labelCategorySafeAsset={t("dashboard.categorySafeAsset")}
       labelCategoryUnclassified={t("dashboard.categoryUnclassified")}
+      labelAccountTypeColumn={t("dashboard.accountTypeColumn")}
+      labelAccountTypeGeneral={t("dashboard.accountTypeGeneral")}
+      labelAccountTypeIsa={t("dashboard.accountTypeIsa")}
+      labelAccountTypePensionSavings={t("dashboard.accountTypePensionSavings")}
+      labelAccountTypeIrp={t("dashboard.accountTypeIrp")}
+      labelAccountTypeRetirementPensionIrp={t("dashboard.accountTypeRetirementPensionIrp")}
+      labelAccountTypeUnclassified={t("dashboard.accountTypeUnclassified")}
       labelAssetName={t("asset.name")}
       labelAssetSymbol={t("asset.symbol")}
       labelShares={t("asset.shares")}
