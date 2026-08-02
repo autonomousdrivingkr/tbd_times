@@ -71,10 +71,22 @@ export function reserveLlmSlot(lane = "primary"): Promise<void> {
   return next;
 }
 
-/** 429 응답이 안내하는 재시도 대기 시간만큼 해당 레인의 다음 슬롯을 뒤로 미룬다. */
+// 429 응답의 "retry in Ns" 안내를 곧이곧대로 반영하면(실제 관측: 최대 59초),
+// 마침 그 순간 이 레인의 슬롯을 기다리게 된 다음 요청 — 예를 들어 뉴스
+// 기사를 클릭한 방문자의 페이지 렌더링 — 이 그 시간만큼 통째로 멈춘다.
+// 실제로 /news/[slug] 가 40~60초씩 걸리는 사고로 이어진 걸 라이브 로그로
+// 확인했다: 병목은 Gemini 호출 자체(429 응답은 빠르다)가 아니라 reserveLlmSlot
+// 이 이 큰 pushback 값만큼 sleep 하며 다음 시도조차 못 하고 있던 것이었다.
+// 그래서 실제 대기 상한을 훨씬 짧게 캡핑한다 — 캡을 넘겨서 더 일찍 재시도해도
+// Gemini가 또 429를 "빠르게" 돌려줄 뿐이니 폴백 체인으로 넘어가는 속도만
+// 빨라질 뿐 손해는 없다(오히려 자기 자신을 오래 재우는 쪽이 더 나쁘다).
+const MAX_PUSHBACK_MS = 8000;
+
+/** 429 응답이 안내하는 재시도 대기 시간만큼 해당 레인의 다음 슬롯을 뒤로 미룬다(상한 있음). */
 export function pushBackLlmSlot(delayMs: number, lane = "primary") {
   const l = getLane(lane);
-  l.nextSlotAt = Math.max(l.nextSlotAt, Date.now() + delayMs);
+  const capped = Math.min(delayMs, MAX_PUSHBACK_MS);
+  l.nextSlotAt = Math.max(l.nextSlotAt, Date.now() + capped);
 }
 
 /** Gemini 429 응답 본문에서 "retry in Ns" 힌트를 파싱한다(구글 특유 문구). 없으면 기본값(20s). */
