@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { auth } from "@/lib/portfolio/auth";
 
 export default async function PortfolioLandingPage({
   params,
@@ -7,6 +9,14 @@ export default async function PortfolioLandingPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+
+  // 이 랜딩 페이지는 로그인 여부와 무관하게 항상 회원가입/로그인 CTA를 보여줬다 —
+  // 헤더의 "포트폴리오" 메뉴가 여기로 연결되다 보니, 이미 로그인된 사용자가
+  // 다른 섹션을 보다가 이 메뉴를 클릭하면 매번 이 마케팅 페이지가 다시 떠서
+  // "로그인이 풀렸다"로 오인하게 만들었다. 세션이 있으면 대시보드로 바로 보낸다.
+  const session = await auth();
+  if (session) redirect(`/portfolio/${locale}/dashboard`);
+
   return <Landing locale={locale} />;
 }
 
