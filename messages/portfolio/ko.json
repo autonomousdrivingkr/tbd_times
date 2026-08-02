@@ -69,7 +69,14 @@
     "aiCommentaryTitle": "AI 포트폴리오 코멘트",
     "aiCommentaryStrengths": "눈에 띄는 점",
     "aiCommentaryRisks": "주의 깊게 볼 점",
-    "aiCommentaryDisclaimer": "AI가 보유 구성 데이터만으로 생성한 참고용 코멘트이며, 투자 자문이 아닙니다. 투자 판단과 책임은 본인에게 있습니다."
+    "aiCommentaryDisclaimer": "AI가 보유 구성 데이터만으로 생성한 참고용 코멘트이며, 투자 자문이 아닙니다. 투자 판단과 책임은 본인에게 있습니다.",
+    "rebalanceAllocation": "목표 리밸런싱 포트폴리오",
+    "categoryColumn": "분류",
+    "categoryGrowthEngine": "성장 엔진",
+    "categoryDividendGrowth": "배당 성장",
+    "categoryHighYieldCashcow": "고배당 캐시카우",
+    "categorySafeAsset": "안전 자산",
+    "categoryUnclassified": "미분류"
   },
   "portfolio": {
     "title": "포트폴리오",

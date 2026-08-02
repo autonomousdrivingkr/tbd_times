@@ -47,6 +47,13 @@ export default async function DashboardPage() {
       labelOther={t("dashboard.other")}
       labelAnnualTotal={t("dashboard.annualTotal")}
       labelHoldingsSummary={t("dashboard.holdingsSummary")}
+      labelRebalanceAllocation={t("dashboard.rebalanceAllocation")}
+      labelCategoryColumn={t("dashboard.categoryColumn")}
+      labelCategoryGrowthEngine={t("dashboard.categoryGrowthEngine")}
+      labelCategoryDividendGrowth={t("dashboard.categoryDividendGrowth")}
+      labelCategoryHighYieldCashcow={t("dashboard.categoryHighYieldCashcow")}
+      labelCategorySafeAsset={t("dashboard.categorySafeAsset")}
+      labelCategoryUnclassified={t("dashboard.categoryUnclassified")}
       labelAssetName={t("asset.name")}
       labelAssetSymbol={t("asset.symbol")}
       labelShares={t("asset.shares")}

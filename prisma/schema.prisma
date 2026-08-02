@@ -64,17 +64,22 @@ model Portfolio {
 }
 
 model Asset {
-  id          String    @id @default(cuid())
-  portfolioId String
-  symbol      String
-  name        String
-  assetType   AssetType
-  exchange    String?
-  currency    String    @default("USD")
-  shares      Float
-  avgCost     Float
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String             @id @default(cuid())
+  portfolioId       String
+  symbol            String
+  name              String
+  assetType         AssetType
+  exchange          String?
+  currency          String             @default("USD")
+  shares            Float
+  avgCost           Float
+  // 사용자가 직접 지정하는 목표 리밸런싱 분류(성장 엔진/배당 성장/고배당
+  // 캐시카우/안전 자산). AI가 자동 분류하지 않는다 — 어떤 종목을 어느
+  // 버킷에 넣을지는 사용자 본인의 투자 전략에 달린 주관적 판단이라
+  // 알고리즘으로 추론할 수 없다. 미지정이면 null("미분류").
+  rebalanceCategory RebalanceCategory?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   portfolio    Portfolio     @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
   transactions Transaction[]
@@ -127,6 +132,13 @@ enum AssetType {
   BOND
   CRYPTO
   OTHER
+}
+
+enum RebalanceCategory {
+  GROWTH_ENGINE
+  DIVIDEND_GROWTH
+  HIGH_YIELD_CASHCOW
+  SAFE_ASSET
 }
 
 enum TransactionType {

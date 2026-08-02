@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import DashboardCharts, { type AssetSlice, type MonthlyBar } from "./DashboardCharts";
+import DashboardCharts, { AllocationDonut, type AssetSlice, type MonthlyBar } from "./DashboardCharts";
+
+const REBALANCE_CATEGORIES = ["GROWTH_ENGINE", "DIVIDEND_GROWTH", "HIGH_YIELD_CASHCOW", "SAFE_ASSET"] as const;
+type RebalanceCategory = (typeof REBALANCE_CATEGORIES)[number];
 
 type DisplayCurrency = "KRW" | "USD";
 type HoldingSortKey = "shares" | "cost" | "value" | "ret" | "dividendYield";
@@ -14,6 +17,7 @@ interface Asset {
   shares: number;
   avgCost: number;
   currency: string;
+  rebalanceCategory?: RebalanceCategory | null;
 }
 
 interface Portfolio {
@@ -59,6 +63,13 @@ interface Props {
   labelOther: string;
   labelAnnualTotal: string;
   labelHoldingsSummary: string;
+  labelRebalanceAllocation: string;
+  labelCategoryColumn: string;
+  labelCategoryGrowthEngine: string;
+  labelCategoryDividendGrowth: string;
+  labelCategoryHighYieldCashcow: string;
+  labelCategorySafeAsset: string;
+  labelCategoryUnclassified: string;
   labelAssetName: string;
   labelAssetSymbol: string;
   labelShares: string;
@@ -81,12 +92,41 @@ export default function DashboardView({
   title, labelTotalValue, labelTotalProfit, labelTotalReturn, labelDividendYield,
   labelMyPortfolios, labelCreatePortfolio, labelNoPortfolio,
   labelAllocation, labelMonthlyDividends, labelTotal, labelOther, labelAnnualTotal,
-  labelHoldingsSummary, labelAssetName, labelAssetSymbol, labelShares, labelCost, labelValue, labelReturn,
+  labelHoldingsSummary, labelRebalanceAllocation, labelCategoryColumn,
+  labelCategoryGrowthEngine, labelCategoryDividendGrowth, labelCategoryHighYieldCashcow,
+  labelCategorySafeAsset, labelCategoryUnclassified,
+  labelAssetName, labelAssetSymbol, labelShares, labelCost, labelValue, labelReturn,
 }: Props) {
   const locale = useLocale();
   const [displayCur, setDisplayCur] = useState<DisplayCurrency>("KRW");
   const [holdingsSortKey, setHoldingsSortKey] = useState<HoldingSortKey>("value");
   const [holdingsSortDir, setHoldingsSortDir] = useState<SortDir>("desc");
+
+  // 리밸런싱 분류는 사용자가 직접 지정하는 주관적 판단이라 AI로 자동
+  // 추론하지 않는다. 서버에서 받아온 값 위에, 방금 이 화면에서 사용자가
+  // 바꾼 값을 낙관적으로 덮어써서 즉시 반영한다(새로고침 없이).
+  const [categoryOverrides, setCategoryOverrides] = useState<Record<string, RebalanceCategory | null>>({});
+  const categoryLabels: Record<RebalanceCategory, string> = {
+    GROWTH_ENGINE: labelCategoryGrowthEngine,
+    DIVIDEND_GROWTH: labelCategoryDividendGrowth,
+    HIGH_YIELD_CASHCOW: labelCategoryHighYieldCashcow,
+    SAFE_ASSET: labelCategorySafeAsset,
+  };
+
+  async function handleCategoryChange(symbol: string, value: string) {
+    const category = (value || null) as RebalanceCategory | null;
+    setCategoryOverrides((prev) => ({ ...prev, [symbol]: category }));
+    try {
+      await fetch("/api/portfolio/assets/category", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol, category }),
+      });
+    } catch {
+      // 네트워크 실패 시에도 화면은 이미 낙관적으로 바뀐 상태로 둔다 —
+      // 다음 페이지 방문 때 서버 값과 다시 동기화된다.
+    }
+  }
 
   // AI 코멘트는 대시보드 핵심 데이터와 분리해 마운트 후 별도로 가져온다 —
   // Gemini·폴백 프로바이더가 전부 느리거나 실패해도(최악 수십 초) 나머지
@@ -156,7 +196,7 @@ export default function DashboardView({
   // 자산 배분 도넛차트와 하단 보유 종목 표가 이 집계를 함께 쓴다. 상위 15개 +
   // 나머지는 "기타"(도넛 전용, 팔레트는 15개 슬롯까지 있지만 매 슬라이스가
   // 범례에 이름과 함께 표시되므로 9번째부터는 색만으로 완전히 구분될 필요는 없다).
-  interface HoldingAgg { symbol: string; name: string; shares: number; cost: number; value: number; dividendYield?: number }
+  interface HoldingAgg { symbol: string; name: string; shares: number; cost: number; value: number; dividendYield?: number; category: RebalanceCategory | null }
   const holdingsBySymbol: Record<string, HoldingAgg> = {};
   for (const p of portfolios) {
     for (const a of p.assets) {
@@ -164,12 +204,16 @@ export default function DashboardView({
       const price = q ? convert(q.price, q.currency) : NaN;
       const cost = convert(a.avgCost, a.currency);
       if (!holdingsBySymbol[a.symbol]) {
-        holdingsBySymbol[a.symbol] = { symbol: a.symbol, name: q?.name ?? a.symbol, shares: 0, cost: 0, value: 0, dividendYield: q?.dividendYield };
+        holdingsBySymbol[a.symbol] = {
+          symbol: a.symbol, name: q?.name ?? a.symbol, shares: 0, cost: 0, value: 0,
+          dividendYield: q?.dividendYield, category: a.rebalanceCategory ?? null,
+        };
       }
       const h = holdingsBySymbol[a.symbol];
       h.shares += a.shares;
       if (isFinite(cost)) h.cost += cost * a.shares;
       if (isFinite(price)) h.value += price * a.shares;
+      if (!h.category && a.rebalanceCategory) h.category = a.rebalanceCategory;
     }
   }
   const sortedHoldings = Object.values(holdingsBySymbol).sort((a, b) => b.value - a.value);
@@ -183,6 +227,29 @@ export default function DashboardView({
   if (otherValue > 0) {
     assetSlices.push({ label: labelOther, value: otherValue, pct: totalValue > 0 ? (otherValue / totalValue) * 100 : 0 });
   }
+
+  // 사용자가 이 화면에서 방금 바꾼 분류가 있으면 그 값을 우선한다(낙관적 UI).
+  function categoryOf(symbol: string): RebalanceCategory | null {
+    const override = categoryOverrides[symbol];
+    if (override !== undefined) return override;
+    return holdingsBySymbol[symbol]?.category ?? null;
+  }
+
+  // 목표 리밸런싱 포트폴리오 — 성장 엔진/배당 성장/고배당 캐시카우/안전 자산
+  // 4개 버킷으로 실제 보유 종목을 값 기준으로 묶어 비중을 보여준다. 분류가
+  // 아직 없는 종목은 "미분류"로 따로 묶어, 합계가 항상 100%가 되게 한다.
+  const categoryTotals: Record<string, number> = {};
+  for (const h of sortedHoldings) {
+    const cat = categoryOf(h.symbol) ?? "UNCLASSIFIED";
+    categoryTotals[cat] = (categoryTotals[cat] ?? 0) + h.value;
+  }
+  const rebalanceSlices: AssetSlice[] = [...REBALANCE_CATEGORIES, "UNCLASSIFIED" as const]
+    .filter((c) => (categoryTotals[c] ?? 0) > 0)
+    .map((c) => ({
+      label: c === "UNCLASSIFIED" ? labelCategoryUnclassified : categoryLabels[c as RebalanceCategory],
+      value: categoryTotals[c],
+      pct: totalValue > 0 ? (categoryTotals[c] / totalValue) * 100 : 0,
+    }));
 
   // 월별 배당금(바차트) — 실제 배당 지급일 기준(균등 분배 아님), 최근 1년 실적을
   // 달력월(1~12월)에 매핑해 "보통 이맘때 배당이 들어온다"를 보여준다.
@@ -292,6 +359,22 @@ export default function DashboardView({
           labelDividendYield={labelDividendYield}
           dividendYieldPct={dividendYieldPct}
         />
+      )}
+
+      {/* 목표 리밸런싱 포트폴리오 — 성장 엔진/배당 성장/고배당 캐시카우/안전
+          자산 4개 버킷으로 실제 보유 종목을 묶어 비중을 보여준다. 분류는
+          아래 보유 종목 표에서 종목별로 직접 지정한다(AI 자동 분류 아님) */}
+      {totalValue > 0 && (
+        <div className="mb-8">
+          <AllocationDonut
+            slices={rebalanceSlices}
+            totalValue={totalValue}
+            currencySymbol={sym}
+            fmtNum={fmtNum}
+            labelAllocation={labelRebalanceAllocation}
+            labelTotal={labelTotal}
+          />
+        </div>
       )}
 
       {/* 요약 카드 */}
@@ -463,6 +546,7 @@ export default function DashboardView({
                     <th className="text-right px-5 py-4">
                       <HoldingsSortBtn col="dividendYield" label={labelDividendYield} />
                     </th>
+                    <th className="text-left px-5 py-4 text-muted">{labelCategoryColumn}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -484,6 +568,19 @@ export default function DashboardView({
                       </td>
                       <td className="px-5 py-4 text-right text-ink-soft">
                         {h.dividendYield ? `${h.dividendYield.toFixed(2)}%` : <span className="text-xs">—</span>}
+                      </td>
+                      <td className="px-5 py-4">
+                        <select
+                          value={categoryOf(h.symbol) ?? ""}
+                          onChange={(e) => handleCategoryChange(h.symbol, e.target.value)}
+                          className="bg-paper border border-line rounded-lg px-2 py-1.5 text-xs text-ink-soft focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                        >
+                          <option value="">{labelCategoryUnclassified}</option>
+                          <option value="GROWTH_ENGINE">{labelCategoryGrowthEngine}</option>
+                          <option value="DIVIDEND_GROWTH">{labelCategoryDividendGrowth}</option>
+                          <option value="HIGH_YIELD_CASHCOW">{labelCategoryHighYieldCashcow}</option>
+                          <option value="SAFE_ASSET">{labelCategorySafeAsset}</option>
+                        </select>
                       </td>
                     </tr>
                   ))}

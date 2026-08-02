@@ -80,7 +80,10 @@ function donutSegmentPath(cx: number, cy: number, rOuter: number, rInner: number
   ].join(" ");
 }
 
-function AllocationDonut({
+// 다른 성격의 구성비를 보여주는 카드(예: 목표 리밸런싱 분류)에서도 재사용할 수
+// 있도록 named export로 노출한다 — 기본 export(DashboardCharts)는 자산배분
+// 도넛 + 월별 배당 막대 한 쌍을 고정 배치하는 용도라 별도 인스턴스를 못 담는다.
+export function AllocationDonut({
   slices,
   totalValue,
   currencySymbol,
