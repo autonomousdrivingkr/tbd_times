@@ -9,6 +9,7 @@ const NAV = [
   { href: "/briefing", label: "브리핑" },
   { href: "/blog", label: "블로그" },
   ...NAV_SECTIONS.map((s) => ({ href: s.href, label: s.label })),
+  { href: "/token-calculator", label: "토큰 계산기" },
   { href: "/portfolio", label: "포트폴리오" },
 ];
 
