@@ -76,14 +76,7 @@
     "categoryDividendGrowth": "배당 성장",
     "categoryHighYieldCashcow": "고배당 캐시카우",
     "categorySafeAsset": "안전 자산",
-    "categoryUnclassified": "미분류",
-    "accountTypeColumn": "계좌",
-    "accountTypeGeneral": "일반 계좌",
-    "accountTypeIsa": "ISA",
-    "accountTypePensionSavings": "연금저축",
-    "accountTypeIrp": "IRP",
-    "accountTypeRetirementPensionIrp": "퇴직연금 IRP",
-    "accountTypeUnclassified": "미지정"
+    "categoryUnclassified": "미분류"
   },
   "portfolio": {
     "title": "포트폴리오",

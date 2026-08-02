@@ -76,14 +76,7 @@
     "categoryDividendGrowth": "Dividend Growth",
     "categoryHighYieldCashcow": "High-Yield Cash Cow",
     "categorySafeAsset": "Safe Assets",
-    "categoryUnclassified": "Unclassified",
-    "accountTypeColumn": "Account",
-    "accountTypeGeneral": "General",
-    "accountTypeIsa": "ISA",
-    "accountTypePensionSavings": "Pension Savings",
-    "accountTypeIrp": "IRP",
-    "accountTypeRetirementPensionIrp": "Retirement Pension IRP",
-    "accountTypeUnclassified": "Unassigned"
+    "categoryUnclassified": "Unclassified"
   },
   "portfolio": {
     "title": "Portfolio",
