@@ -28,12 +28,15 @@ async function queryVisitsCount(since: Date, until: Date): Promise<VisitorCounts
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
+    const rawBody = await res.text();
+    // TEMP: 0명으로 표시되는 원인 진단용 — 응답 형태를 실측하기 위해 성공 시에도
+    // 원문을 로그로 남긴다. 원인 파악 후 제거할 것.
+    console.log(`[vercel-analytics] DEBUG status=${res.status} url=${params}`, rawBody.slice(0, 500));
     if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.error(`[vercel-analytics] status ${res.status}`, body.slice(0, 300));
+      console.error(`[vercel-analytics] status ${res.status}`, rawBody.slice(0, 300));
       return null;
     }
-    const json = (await res.json()) as { data?: { pageviews?: number; visitors?: number } };
+    const json = JSON.parse(rawBody) as { data?: { pageviews?: number; visitors?: number } };
     return { pageviews: json.data?.pageviews ?? 0, visitors: json.data?.visitors ?? 0 };
   } catch (err) {
     console.error("[vercel-analytics] fetch failed", err);
