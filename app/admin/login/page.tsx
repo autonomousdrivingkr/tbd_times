@@ -3,7 +3,7 @@ import { isAdminEnabled, isAdminPageAuthed } from "@/lib/admin-auth";
 import LoginForm from "@/components/admin/LoginForm";
 
 export default async function AdminLoginPage() {
-  if (await isAdminPageAuthed()) redirect("/admin/blog");
+  if (await isAdminPageAuthed()) redirect("/admin");
 
   return (
     <div className="container-page flex min-h-screen max-w-sm flex-col justify-center py-12">

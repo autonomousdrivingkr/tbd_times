@@ -24,7 +24,7 @@ export default function LoginForm() {
         setError(data.error === "invalid_password" ? "비밀번호가 올바르지 않습니다." : "로그인에 실패했습니다.");
         return;
       }
-      router.push("/admin/blog");
+      router.push("/admin");
       router.refresh();
     } catch {
       setError("네트워크 오류가 발생했습니다.");
